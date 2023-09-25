@@ -1,16 +1,7 @@
 #include "linkedList.h"
 #include <unistd.h>
 #include <stdlib.h>
-
-int stringlen(char *string)
-{
-    int length = 0;
-    while (*string++ != '\0')
-    {
-        length++;
-    }
-    return length;
-}
+#include "mystring.h"
 
 Node *create_node(int lineNum, char *content)
 {

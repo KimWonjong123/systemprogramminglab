@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include "linkedList.h"
+#include "mystring.h"
 
 #define FILE_READ_ERROR "File Read Error!\n"
 
