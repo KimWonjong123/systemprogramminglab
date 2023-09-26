@@ -23,4 +23,10 @@ char *issubstring(char *substr, char *str);
 */
 void stringcpy(char *source, char *dest);
 
+
+/*
+    copies n bytes from 1st arg.
+*/
+void stringncpy(char *source, char *dest, int nbytes);
+
 #endif

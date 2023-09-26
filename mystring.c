@@ -58,3 +58,10 @@ void stringcpy(char *source, char *dest) {
 	}
 	dest[len] = '\0';
 }
+
+void stringncpy(char *source, char *dest, int nbytes) {
+	for (int i = 0; i < nbytes; i++) {
+		dest[i] = source[i];
+	}
+	dest[nbytes] = '\0';
+}
