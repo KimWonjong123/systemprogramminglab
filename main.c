@@ -15,11 +15,11 @@ int main(int argc, char *argv[])
     int fd;
     LinkedList list = {0, NULL, NULL};
     int lineCnt = 0;
-    if ((fd = open(fileName, O_RDONLY | O_CREAT, 0755)) < 0)
-    {
-        write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
-        exit(-1);
-    }
+    // if ((fd = open(fileName, O_RDONLY | O_CREAT, 0755)) < 0)
+    // {
+    //     write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
+    //     exit(-1);
+    // }
 
     insert_at_tail(&list, create_node(++lineCnt, "first line."));
     insert_at_tail(&list, create_node(++lineCnt, "second line."));
@@ -28,7 +28,27 @@ int main(int argc, char *argv[])
 
     delete_all_node(&list);
 
-    close(fd);
+    char *str = "this is a string.\n";
+    char *substr = "string";
+
+    char *result = issubstring(substr, str);
+
+    if (result != NULL) {
+        write(2, result, stringlen(result));
+    }
+
+    char *testA = "stringC\n";
+    char *testB = "stringC\n";
+
+    int result2 = stringcmp(testA, testB);
+    if (result2) {
+        write(2, "Two strings are equal.\n", 23);
+    }
+    else {
+        write(2, "Two strings are not equal.\n", 27);
+    }
+
+    // close(fd);
 
     return 0;
 }
