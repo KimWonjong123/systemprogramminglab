@@ -97,7 +97,7 @@ void print_list(LinkedList *list)
     Node *node = list->head;
     while (node != NULL)
     {
-        write(1, (char *)node->content, node->length + 1);
+        write(1, (char *)node->content, node->length);
         write(1, "\n", 1);
         node = node->next;
     }
