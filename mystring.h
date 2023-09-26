@@ -21,6 +21,6 @@ char *issubstring(char *substr, char *str);
 /*
     copies string from 1st arg.
 */
-void stringcpy(char *target, char *dest);
+void stringcpy(char *source, char *dest);
 
 #endif

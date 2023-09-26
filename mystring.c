@@ -51,10 +51,10 @@ char *issubstring(char *substr, char *str)
 	return NULL;
 }
 
-void stringcpy(char *target, char *dest) {
-	int len = stringlen(target);
+void stringcpy(char *source, char *dest) {
+	int len = stringlen(source);
 	for (int i = 0; i < len; i++) {
-		dest[i] = target[i];
+		dest[i] = source[i];
 	}
 	dest[len] = '\0';
 }
