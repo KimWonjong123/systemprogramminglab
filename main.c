@@ -19,7 +19,8 @@ enum MODE
     REGEXP
 };
 
-int read_line(int fd, char result[BUFSIZE]) {
+int read_line(int fd, char result[BUFSIZE])
+{
     int cnt = 0;
     char buf[2];
     int nbytes;
@@ -32,21 +33,70 @@ int read_line(int fd, char result[BUFSIZE]) {
         }
     }
     result[cnt - 1] = '\0';
-    if (nbytes < 0) {
+    if (nbytes < 0)
+    {
         write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
         exit(-1);
     }
     return nbytes;
 }
 
-enum MODE resolve_input() {
-    char buf[BUFSIZE];
-    read(0, buf, BUFSIZE);
-    if (buf[0] != '"') {
-        return !issubstring(" ", buf) ? SWORD : MWORD;
+void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
+{
+    read(0, input, BUFSIZE);
+    char buffer[BUFSIZE];
+    int cnt = 0;
+    if (input[0] != '"')
+    {
+        *mode = !issubstring(" ", input) ? SWORD : MWORD;
+        if (*mode == SWORD)
+        {
+            char *content = (char *)malloc(stringlen(input) + 1);
+            stringcpy(input, content);
+            insert_at_tail(inputList, create_node(++cnt, content));
+            free(content);
+        }
+        else
+        {
+            char *inputp1 = input; // end point of word
+            char *inputp2 = input; // starting point of word
+            while (*inputp1 != '\0')
+            {
+                while (*inputp1 != ' ')
+                {
+                    inputp1++;
+                }
+                char *content = (char *)malloc(inputp1 - inputp2 + 1);
+                stringncpy(inputp2, content, inputp1 - inputp2);
+                insert_at_tail(inputList, create_node(++cnt, content));
+                inputp2 = ++inputp1;
+                free(content);
+            }
+        }
     }
-    else {
-        return !issubstring("*", buf) ? CWORD : REGEXP;
+    else
+    {
+        *mode = !issubstring("*", input) ? CWORD : REGEXP;
+        if (*mode == CWORD)
+        {
+            char *content = (char *)malloc(stringlen(input) - 1);
+            stringncpy(input + 1, content, stringlen(input) - 2);
+            insert_at_tail(inputList, create_node(++cnt, content));
+            free(content);
+        }
+        else
+        {
+            char *asterisk = issubstring("*", input);
+            char *content = (char *)malloc(asterisk - input);
+            stringncpy(input + 1, content, asterisk - input - 1);
+            insert_at_tail(inputList, create_node(++cnt, content));
+            free(content);
+
+            content = (char *)malloc(stringlen(input) - stringlen(asterisk));
+            stringncpy(asterisk + 1, content, stringlen(input) - stringlen(asterisk) - 1);
+            insert_at_tail(inputList, create_node(++cnt, content));
+            free(content);
+        }
     }
 }
 
@@ -55,7 +105,8 @@ int main(int argc, char *argv[])
     char *fileName = argv[1];
     int fd;
     char buffer[BUFSIZE];
-    LinkedList textfile = {0, NULL, NULL};
+    LinkedList textFile = {0, NULL, NULL};
+    LinkedList inputList = {0, NULL, NULL};
     int lineCnt = 0;
 
     if ((fd = open(fileName, O_RDONLY | O_CREAT, 0755)) < 0)
@@ -64,16 +115,24 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    enum MODE mode = resolve_input();
+    char input[BUFSIZE];
+    enum MODE mode;
+    resolve_input(input, &mode, &inputList);
 
-    while (read_line(fd, buffer)) {
-        insert_at_tail(&textfile, create_node(++lineCnt, buffer));
+    while (read_line(fd, buffer))
+    {
+        insert_at_tail(&textFile, create_node(++lineCnt, buffer));
     }
-    insert_at_tail(&textfile, create_node(++lineCnt, buffer));
+    insert_at_tail(&textFile, create_node(++lineCnt, buffer));
 
-    print_list(&textfile);
+    write(1, "\nfile content:\n\n", 16);
+    print_list(&textFile);
 
-    delete_all_node(&textfile);
+    write(1, "\ninput:\n\n", 9);
+    print_list(&inputList);
+
+    delete_all_node(&textFile);
+    delete_all_node(&inputList);
 
     close(fd);
 
