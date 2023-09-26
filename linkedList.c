@@ -7,8 +7,9 @@ Node *create_node(int lineNum, char *content)
 {
     Node *node = (Node *)malloc(sizeof(Node));
     node->lineNum = lineNum;
-    node->content = content;
-    node->length = stringlen(content);
+    node->content = (char *)malloc(stringlen(content) + 1);
+    stringcpy(content, node->content);
+    node->length = stringlen(node->content);
     node->next = NULL;
     node->prev = NULL;
     return node;
@@ -72,7 +73,7 @@ void insert_at_before(LinkedList *list, Node *node, Node *toInsert)
 
 void delete_node(LinkedList *list, Node *node)
 {
-    // free(node->content);
+    free(node->content);
     if (node->prev != NULL)
     {
         node->prev->next = node->next;
