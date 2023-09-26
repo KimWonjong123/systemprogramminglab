@@ -19,6 +19,31 @@ enum MODE
     REGEXP
 };
 
+char *int_to_string(int num)
+{
+    int digit = 0;
+    char buffer[100];
+    if (num == 0)
+    {
+        buffer[0] = '0';
+        digit++;
+    }
+    while (num > 0)
+    {
+        buffer[digit] = (num % 10) + '0';
+        num /= 10;
+        digit++;
+    }
+
+    char *ret = (char *)malloc(digit + 1);
+    for (int i = digit-1; i >= 0; i--)
+    {
+        ret[digit - i - 1] = buffer[i];
+    }
+    ret[digit] = '\0';
+    return ret;
+}
+
 int read_line(int fd, char result[BUFSIZE])
 {
     int cnt = 0;
@@ -46,6 +71,7 @@ void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
     read(0, input, BUFSIZE);
     char buffer[BUFSIZE];
     int cnt = 0;
+    input[stringlen(input) - 1] = '\0';
     if (input[0] != '"')
     {
         *mode = !issubstring(" ", input) ? SWORD : MWORD;
@@ -100,6 +126,44 @@ void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
     }
 }
 
+void handle_sword(LinkedList *textFile, LinkedList *inputList)
+{
+    Node *text = textFile->head;
+    char *toFind = inputList->head->content;
+    for (int i = 0; i < textFile->num; i++)
+    {
+        char *pos = issubstring(toFind, text->content);
+        while (pos != NULL) {
+            char *lineNum = int_to_string(text->lineNum);
+            char *idx = int_to_string(pos - text->content);
+            write(1, lineNum, stringlen(lineNum));
+            write(1, ":", 1);
+            write(1, idx, stringlen(idx));
+            write(1, " ", 1);
+            free(lineNum);
+            free(idx);
+            pos = issubstring(toFind, pos + 1);
+        }
+        text = text->next;
+    }
+    write(1, "\n", 1);
+}
+
+void handle_mword(LinkedList *textFile, LinkedList *inputList)
+{
+    
+}
+
+void handle_cword(LinkedList *textFile, LinkedList *inputList)
+{
+    
+}
+
+void handle_regexp(LinkedList *textFile, LinkedList *inputList)
+{
+    
+}
+
 int main(int argc, char *argv[])
 {
     char *fileName = argv[1];
@@ -125,11 +189,28 @@ int main(int argc, char *argv[])
     }
     insert_at_tail(&textFile, create_node(++lineCnt, buffer));
 
-    write(1, "\nfile content:\n\n", 16);
-    print_list(&textFile);
+    switch(mode)
+    {
+    case SWORD:
+        handle_sword(&textFile, &inputList);
+        break;
+    case MWORD:
+        handle_mword(&textFile, &inputList);
+        break;
+    case CWORD:
+        handle_cword(&textFile, &inputList);
+        break;
+    case REGEXP:
+        handle_regexp(&textFile, &inputList);
+        break;
+    default:
+    }
+    
+    // write(1, "\nfile content:\n\n", 16);
+    // print_list(&textFile);
 
-    write(1, "\ninput:\n\n", 9);
-    print_list(&inputList);
+    // write(1, "\ninput:\n\n", 9);
+    // print_list(&inputList);
 
     delete_all_node(&textFile);
     delete_all_node(&inputList);
