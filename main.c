@@ -16,7 +16,8 @@ enum MODE
     SWORD,
     MWORD,
     CWORD,
-    REGEXP
+    REGEXP,
+    EXIT
 };
 
 char *int_to_string(int num)
@@ -73,15 +74,20 @@ int read_line(int fd, char result[BUFSIZE])
     return nbytes;
 }
 
-void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
+enum MODE resolve_input(char *input, LinkedList *inputList)
 {
+    enum MODE mode;
     read(0, input, BUFSIZE);
     int cnt = 0;
     input[stringlen(input) - 1] = '\0';
+    if (stringcmp("PA1EXIT", input))
+    {
+        return EXIT;
+    }
     if (input[0] != '"')
     {
-        *mode = !issubstring(" ", input) ? SWORD : MWORD;
-        if (*mode == SWORD)
+        mode = !issubstring(" ", input) ? SWORD : MWORD;
+        if (mode == SWORD)
         {
             char *content = (char *)malloc(stringlen(input) + 1);
             stringcpy(input, content);
@@ -108,8 +114,8 @@ void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
     }
     else
     {
-        *mode = !issubstring("*", input) ? CWORD : REGEXP;
-        if (*mode == CWORD)
+        mode = !issubstring("*", input) ? CWORD : REGEXP;
+        if (mode == CWORD)
         {
             char *content = (char *)malloc(stringlen(input) - 1);
             stringncpy(input + 1, content, stringlen(input) - 2);
@@ -130,6 +136,7 @@ void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
             free(content);
         }
     }
+    return mode;
 }
 
 void handle_sword(LinkedList *textFile, LinkedList *inputList)
@@ -172,7 +179,6 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
             {
                 break;
             }
-            // toFind = toFind->next;
         }
         if (j == inputNum)
         {
@@ -181,7 +187,6 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
             free(lineNum);
             write(1, " ", 1);
         }
-        // text = text->next;
     }
     write(1, "\n", 1);
 }
@@ -212,8 +217,7 @@ int main(int argc, char *argv[])
     }
 
     char input[BUFSIZE];
-    enum MODE mode;
-    resolve_input(input, &mode, &inputList);
+    enum MODE mode = resolve_input(input, &inputList);
 
     while (read_line(fd, buffer))
     {
@@ -230,14 +234,17 @@ int main(int argc, char *argv[])
         handle_mword(&textFile, &inputList);
         break;
     case CWORD:
-        handle_cword(&textFile, &inputList);
+        handle_sword(&textFile, &inputList);
         break;
     case REGEXP:
         handle_regexp(&textFile, &inputList);
         break;
+    case EXIT:
+        break;
     default:
+        break;
     }
-    
+
     // write(1, "\nfile content:\n", 16);
     // print_list(&textFile);
 
@@ -276,7 +283,7 @@ int main(int argc, char *argv[])
     //     write(2, "Two strings are not equal.\n", 27);
     // }
 
-    close(fd);
+    // close(fd);
 
     return 0;
 }
