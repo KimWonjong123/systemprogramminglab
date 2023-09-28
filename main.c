@@ -57,7 +57,9 @@ int read_line(int fd, char result[BUFSIZE])
             break;
         }
     }
-    result[cnt - 1] = '\0';
+    if (nbytes > 0 ) {
+        result[cnt - 1] = '\0';
+    }
     if (nbytes < 0)
     {
         write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
@@ -69,7 +71,6 @@ int read_line(int fd, char result[BUFSIZE])
 void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
 {
     read(0, input, BUFSIZE);
-    char buffer[BUFSIZE];
     int cnt = 0;
     input[stringlen(input) - 1] = '\0';
     if (input[0] != '"')
