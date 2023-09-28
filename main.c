@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
     do
     {
         mode = resolve_input(&inputList);
-        
+
         switch (mode)
         {
         case SWORD:
@@ -297,65 +297,11 @@ int main(int argc, char *argv[])
         }
 
     } while (mode != EXIT);
-    // switch (mode)
-    // {
-    // case SWORD:
-    //     handle_sword(&textFile, &inputList);
-    //     break;
-    // case MWORD:
-    //     handle_mword(&textFile, &inputList);
-    //     break;
-    // case CWORD:
-    //     handle_cword(&textFile, &inputList);
-    //     break;
-    // case REGEXP:
-    //     handle_regexp(&textFile, &inputList);
-    //     break;
-    // case EXIT:
-    //     break;
-    // default:
-    //     break;
-    // }
-
-    // write(1, "\nfile content:\n", 16);
-    // print_list(&textFile);
-
-    // write(1, "\ninput:\n\n", 9);
-    // print_list(&inputList);
 
     delete_all_node(&textFile);
     delete_all_node(&inputList);
 
     close(fd);
-
-    // insert_at_tail(&list, create_node(++lineCnt, "first line."));
-    // insert_at_tail(&list, create_node(++lineCnt, "second line."));
-
-    // print_list(&list);
-
-    // delete_all_node(&list);
-
-    // char *str = "this is a string.\n";
-    // char *substr = "string";
-
-    // char *result = issubstring(substr, str);
-
-    // if (result != NULL) {
-    //     write(2, result, stringlen(result));
-    // }
-
-    // char *testA = "stringC\n";
-    // char *testB = "stringC\n";
-
-    // int result2 = stringcmp(testA, testB);
-    // if (result2) {
-    //     write(2, "Two strings are equal.\n", 23);
-    // }
-    // else {
-    //     write(2, "Two strings are not equal.\n", 27);
-    // }
-
-    // close(fd);
 
     return 0;
 }
