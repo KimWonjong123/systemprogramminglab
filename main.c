@@ -152,7 +152,7 @@ void handle_sword(LinkedList *textFile, LinkedList *inputList)
     Node *toFind = inputList->head;
     for (int i = 0; i < textFile->num; i++)
     {
-        char *pos = issubstring(toFind->content, text->content);
+        char *pos = isincluded(toFind->content, text->content);
         while (pos != NULL)
         {
             char *lineNum = int_to_string(text->lineNum);
@@ -163,7 +163,7 @@ void handle_sword(LinkedList *textFile, LinkedList *inputList)
             write(1, " ", 1);
             free(lineNum);
             free(idx);
-            pos = issubstring(toFind->content, pos + 1);
+            pos = isincluded(toFind->content, pos + 1);
         }
         text = text->next;
     }

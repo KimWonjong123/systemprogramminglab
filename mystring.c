@@ -51,6 +51,29 @@ char *issubstring(char *substr, char *str)
 	return NULL;
 }
 
+char *isincluded(char *word, char *str) {
+	char *start = str;
+	char *end = str;
+	char *substr;
+	while (*start != '\0')
+	{
+		while (*end != ' ' && *end != '\t' && *end != '\0')
+		{
+			end++;
+		}
+		substr = (char *)malloc(end - start + 1);
+		stringncpy(start, substr, end - start);
+		if (stringcmp(word, substr))
+		{
+			free(substr);
+			return start;
+		}
+		end = start = nextWord(start);
+		free(substr);
+	}
+	return NULL;
+}
+
 void stringcpy(char *source, char *dest) {
 	int len = stringlen(source);
 	for (int i = 0; i < len; i++) {

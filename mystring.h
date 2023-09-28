@@ -19,6 +19,13 @@ int stringcmp(char *a, char *b);
 char *issubstring(char *substr, char *str);
 
 /*
+    checks whether given word is included in given string.
+    if so, returns starting point of word.
+    else, returns NULL.
+*/
+char *isincluded(char *word, char *str);
+
+/*
     copies string from 1st arg.
 */
 void stringcpy(char *source, char *dest);
