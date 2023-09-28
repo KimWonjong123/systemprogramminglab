@@ -201,7 +201,26 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
 
 void handle_cword(LinkedList *textFile, LinkedList *inputList)
 {
-
+    Node *text = textFile->head;
+    Node *toFind = inputList->head;
+    for (int i = 0; i < textFile->num; i++)
+    {
+        char *pos = issubstring(toFind->content, text->content);
+        while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
+        {
+            char *lineNum = int_to_string(text->lineNum);
+            char *idx = int_to_string(pos - text->content);
+            write(1, lineNum, stringlen(lineNum));
+            write(1, ":", 1);
+            write(1, idx, stringlen(idx));
+            write(1, " ", 1);
+            free(lineNum);
+            free(idx);
+            pos = isincluded(toFind->content, pos + 1);
+        }
+        text = text->next;
+    }
+    write(1, "\n", 1);
 }
 
 void handle_regexp(LinkedList *textFile, LinkedList *inputList)
@@ -260,7 +279,7 @@ int main(int argc, char *argv[])
         handle_mword(&textFile, &inputList);
         break;
     case CWORD:
-        handle_sword(&textFile, &inputList);
+        handle_cword(&textFile, &inputList);
         break;
     case REGEXP:
         handle_regexp(&textFile, &inputList);
