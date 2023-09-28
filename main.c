@@ -74,12 +74,14 @@ int read_line(int fd, char result[BUFSIZE])
     return nbytes;
 }
 
-enum MODE resolve_input(char *input, LinkedList *inputList)
+enum MODE resolve_input(LinkedList *inputList)
 {
     enum MODE mode;
-    read(0, input, BUFSIZE);
+    char input[BUFSIZE];
+    int nbytes = read(0, input, BUFSIZE);
     int cnt = 0;
-    input[stringlen(input) - 1] = '\0';
+    input[nbytes - 1] = '\0';
+    delete_all_node(inputList);
     if (stringcmp("PA1EXIT", input))
     {
         return EXIT;
@@ -254,6 +256,8 @@ int main(int argc, char *argv[])
     LinkedList textFile = {0, NULL, NULL};
     LinkedList inputList = {0, NULL, NULL};
     int lineCnt = 0;
+    // char input[BUFSIZE];
+    enum MODE mode;
 
     if ((fd = open(fileName, O_RDONLY | O_CREAT, 0755)) < 0)
     {
@@ -261,8 +265,6 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
-    char input[BUFSIZE];
-    enum MODE mode = resolve_input(input, &inputList);
 
     while (read_line(fd, buffer))
     {
@@ -270,25 +272,50 @@ int main(int argc, char *argv[])
     }
     insert_at_tail(&textFile, create_node(++lineCnt, buffer));
 
-    switch (mode)
+    do
     {
-    case SWORD:
-        handle_sword(&textFile, &inputList);
-        break;
-    case MWORD:
-        handle_mword(&textFile, &inputList);
-        break;
-    case CWORD:
-        handle_cword(&textFile, &inputList);
-        break;
-    case REGEXP:
-        handle_regexp(&textFile, &inputList);
-        break;
-    case EXIT:
-        break;
-    default:
-        break;
-    }
+        mode = resolve_input(&inputList);
+        
+        switch (mode)
+        {
+        case SWORD:
+            handle_sword(&textFile, &inputList);
+            break;
+        case MWORD:
+            handle_mword(&textFile, &inputList);
+            break;
+        case CWORD:
+            handle_cword(&textFile, &inputList);
+            break;
+        case REGEXP:
+            handle_regexp(&textFile, &inputList);
+            break;
+        case EXIT:
+            break;
+        default:
+            mode = EXIT;
+        }
+
+    } while (mode != EXIT);
+    // switch (mode)
+    // {
+    // case SWORD:
+    //     handle_sword(&textFile, &inputList);
+    //     break;
+    // case MWORD:
+    //     handle_mword(&textFile, &inputList);
+    //     break;
+    // case CWORD:
+    //     handle_cword(&textFile, &inputList);
+    //     break;
+    // case REGEXP:
+    //     handle_regexp(&textFile, &inputList);
+    //     break;
+    // case EXIT:
+    //     break;
+    // default:
+    //     break;
+    // }
 
     // write(1, "\nfile content:\n", 16);
     // print_list(&textFile);
