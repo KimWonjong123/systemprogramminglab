@@ -65,3 +65,13 @@ void stringncpy(char *source, char *dest, int nbytes) {
 	}
 	dest[nbytes] = '\0';
 }
+
+char *nextWord(char *str) {
+	while (*str != ' ' && *str != '\t' && *str != '\0') {
+		str++;
+	}
+	while (*str == ' ' || *str == '\t') {
+		str++;
+	}
+	return str;
+}

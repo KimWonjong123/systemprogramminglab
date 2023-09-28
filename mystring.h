@@ -29,4 +29,11 @@ void stringcpy(char *source, char *dest);
 */
 void stringncpy(char *source, char *dest, int nbytes);
 
+
+/*
+    returns a pointer to the starting point of next word
+    or the end of the given string.
+*/
+char *nextWord(char *str);
+
 #endif

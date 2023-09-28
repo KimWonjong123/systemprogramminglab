@@ -17,8 +17,6 @@ typedef struct list
     Node *tail;
 } LinkedList;
 
-int stringlen(char *string);
-
 Node *create_node(int lineNum, char *content);
 
 void insert_at_head(LinkedList *list, Node *node);

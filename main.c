@@ -37,7 +37,7 @@ char *int_to_string(int num)
     }
 
     char *ret = (char *)malloc(digit + 1);
-    for (int i = digit-1; i >= 0; i--)
+    for (int i = digit - 1; i >= 0; i--)
     {
         ret[digit - i - 1] = buffer[i];
     }
@@ -86,7 +86,14 @@ enum MODE resolve_input(char *input, LinkedList *inputList)
     }
     if (input[0] != '"')
     {
-        mode = !issubstring(" ", input) ? SWORD : MWORD;
+        if (issubstring("*", input))
+        {
+            mode = REGEXP;
+        }
+        else
+        {
+            mode = !issubstring(" ", input) ? SWORD : MWORD;
+        }
         if (mode == SWORD)
         {
             char *content = (char *)malloc(stringlen(input) + 1);
@@ -94,7 +101,7 @@ enum MODE resolve_input(char *input, LinkedList *inputList)
             insert_at_tail(inputList, create_node(++cnt, content));
             free(content);
         }
-        else
+        else if (mode == MWORD)
         {
             char *inputp1 = input; // end point of word
             char *inputp2 = input; // starting point of word
@@ -111,30 +118,30 @@ enum MODE resolve_input(char *input, LinkedList *inputList)
                 free(content);
             }
         }
-    }
-    else
-    {
-        mode = !issubstring("*", input) ? CWORD : REGEXP;
-        if (mode == CWORD)
-        {
-            char *content = (char *)malloc(stringlen(input) - 1);
-            stringncpy(input + 1, content, stringlen(input) - 2);
-            insert_at_tail(inputList, create_node(++cnt, content));
-            free(content);
-        }
         else
         {
             char *asterisk = issubstring("*", input);
-            char *content = (char *)malloc(asterisk - input);
-            stringncpy(input + 1, content, asterisk - input - 1);
+            char *content = (char *)malloc(asterisk - input + 1);
+            stringncpy(input, content, asterisk - input);
             insert_at_tail(inputList, create_node(++cnt, content));
             free(content);
 
-            content = (char *)malloc(stringlen(input) - stringlen(asterisk));
-            stringncpy(asterisk + 1, content, stringlen(input) - stringlen(asterisk) - 1);
+            content = (char *)malloc(stringlen(asterisk));
+            stringncpy(asterisk + 1, content, stringlen(asterisk) - 1);
             insert_at_tail(inputList, create_node(++cnt, content));
             free(content);
         }
+    }
+    else
+    {
+        mode = CWORD;
+        // if (mode == CWORD)
+        // {
+        char *content = (char *)malloc(stringlen(input) - 1);
+        stringncpy(input + 1, content, stringlen(input) - 2);
+        insert_at_tail(inputList, create_node(++cnt, content));
+        free(content);
+        // }
     }
     return mode;
 }
@@ -146,7 +153,8 @@ void handle_sword(LinkedList *textFile, LinkedList *inputList)
     for (int i = 0; i < textFile->num; i++)
     {
         char *pos = issubstring(toFind->content, text->content);
-        while (pos != NULL) {
+        while (pos != NULL)
+        {
             char *lineNum = int_to_string(text->lineNum);
             char *idx = int_to_string(pos - text->content);
             write(1, lineNum, stringlen(lineNum));
@@ -193,12 +201,29 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
 
 void handle_cword(LinkedList *textFile, LinkedList *inputList)
 {
-    
 }
 
 void handle_regexp(LinkedList *textFile, LinkedList *inputList)
 {
-    
+    char *word1 = inputList->head->content;
+    char *word2 = inputList->tail->content;
+    int numOfLine = textFile->num;
+    Node *text = textFile->head;
+    for (int i = 0; i < numOfLine; i++, text = text->next)
+    {
+        char *content = text->content;
+        if ((content = issubstring(word1, content)) != NULL)
+        {
+            if ((content = issubstring(word2, nextWord(content))) != NULL)
+            {
+                char *lineNum = int_to_string(text->lineNum);
+                write(1, lineNum, stringlen(lineNum));
+                free(lineNum);
+                write(1, " ", 1);
+            }
+        }
+    }
+    write(1, "\n", 1);
 }
 
 int main(int argc, char *argv[])
@@ -225,7 +250,7 @@ int main(int argc, char *argv[])
     }
     insert_at_tail(&textFile, create_node(++lineCnt, buffer));
 
-    switch(mode)
+    switch (mode)
     {
     case SWORD:
         handle_sword(&textFile, &inputList);
