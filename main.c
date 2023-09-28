@@ -57,8 +57,13 @@ int read_line(int fd, char result[BUFSIZE])
             break;
         }
     }
-    if (nbytes > 0 ) {
+    if (buf[0] == '\n')
+    {
         result[cnt - 1] = '\0';
+    }
+    if (nbytes == 0)
+    {
+        result[cnt] = '\0';
     }
     if (nbytes < 0)
     {
@@ -130,10 +135,10 @@ void resolve_input(char *input, enum MODE *mode, LinkedList *inputList)
 void handle_sword(LinkedList *textFile, LinkedList *inputList)
 {
     Node *text = textFile->head;
-    char *toFind = inputList->head->content;
+    Node *toFind = inputList->head;
     for (int i = 0; i < textFile->num; i++)
     {
-        char *pos = issubstring(toFind, text->content);
+        char *pos = issubstring(toFind->content, text->content);
         while (pos != NULL) {
             char *lineNum = int_to_string(text->lineNum);
             char *idx = int_to_string(pos - text->content);
@@ -143,7 +148,7 @@ void handle_sword(LinkedList *textFile, LinkedList *inputList)
             write(1, " ", 1);
             free(lineNum);
             free(idx);
-            pos = issubstring(toFind, pos + 1);
+            pos = issubstring(toFind->content, pos + 1);
         }
         text = text->next;
     }
@@ -152,7 +157,33 @@ void handle_sword(LinkedList *textFile, LinkedList *inputList)
 
 void handle_mword(LinkedList *textFile, LinkedList *inputList)
 {
-    
+    int numOfLine = textFile->num;
+    int i;
+    Node *text = textFile->head;
+    Node *toFind;
+    for (i = 0; i < numOfLine; i++, text = text->next)
+    {
+        int j;
+        int inputNum = inputList->num;
+        toFind = inputList->head;
+        for (j = 0; j < inputNum; j++, toFind = toFind->next)
+        {
+            if (!issubstring(toFind->content, text->content))
+            {
+                break;
+            }
+            // toFind = toFind->next;
+        }
+        if (j == inputNum)
+        {
+            char *lineNum = int_to_string(text->lineNum);
+            write(1, lineNum, stringlen(lineNum));
+            free(lineNum);
+            write(1, " ", 1);
+        }
+        // text = text->next;
+    }
+    write(1, "\n", 1);
 }
 
 void handle_cword(LinkedList *textFile, LinkedList *inputList)
@@ -207,7 +238,7 @@ int main(int argc, char *argv[])
     default:
     }
     
-    // write(1, "\nfile content:\n\n", 16);
+    // write(1, "\nfile content:\n", 16);
     // print_list(&textFile);
 
     // write(1, "\ninput:\n\n", 9);
