@@ -232,9 +232,9 @@ void handle_regexp(LinkedList *textFile, LinkedList *inputList)
     for (int i = 0; i < numOfLine; i++, text = text->next)
     {
         char *content = text->content;
-        if ((content = issubstring(word1, content)) != NULL)
+        if ((content = isincluded(word1, content)) != NULL)
         {
-            if ((content = issubstring(word2, nextWord(content))) != NULL)
+            if ((content = isincluded(word2, nextWord(content))) != NULL)
             {
                 char *lineNum = int_to_string(text->lineNum);
                 write(1, lineNum, stringlen(lineNum));
