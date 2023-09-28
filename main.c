@@ -183,7 +183,7 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
         toFind = inputList->head;
         for (j = 0; j < inputNum; j++, toFind = toFind->next)
         {
-            if (!issubstring(toFind->content, text->content))
+            if (!isincluded(toFind->content, text->content))
             {
                 break;
             }
@@ -201,6 +201,7 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
 
 void handle_cword(LinkedList *textFile, LinkedList *inputList)
 {
+
 }
 
 void handle_regexp(LinkedList *textFile, LinkedList *inputList)
