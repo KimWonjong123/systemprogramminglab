@@ -1,3 +1,6 @@
 *.txt
-pa1
+pa1/pa1
 *.out
+*.tar.gz
+*.tgz
+*.tar
