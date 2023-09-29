@@ -3,13 +3,11 @@
 #include <stdlib.h>
 #include "mystring.h"
 
-Node *create_node(int lineNum, char *content)
+Node *create_node(long long offset, long long size)
 {
     Node *node = (Node *)malloc(sizeof(Node));
-    node->lineNum = lineNum;
-    node->content = (char *)malloc(stringlen(content) + 1);
-    stringcpy(content, node->content);
-    node->length = stringlen(node->content);
+    node->offset = offset;
+    node->size = size;
     node->next = NULL;
     node->prev = NULL;
     return node;
@@ -73,7 +71,6 @@ void insert_at_before(LinkedList *list, Node *node, Node *toInsert)
 
 void delete_node(LinkedList *list, Node *node)
 {
-    free(node->content);
     if (node->prev != NULL)
     {
         node->prev->next = node->next;
@@ -92,23 +89,27 @@ void delete_node(LinkedList *list, Node *node)
     free(node);
 }
 
-void print_list(LinkedList *list)
-{
-    Node *node = list->head;
-    while (node != NULL)
-    {
-        write(1, (char *)node->content, node->length);
-        write(1, "\n", 1);
-        node = node->next;
-    }
-}
+// void print_list(LinkedList *list)
+// {
+//     Node *node = list->head;
+//     while (node != NULL)
+//     {
+//         write(1, (char *)node->content, node->length);
+//         write(1, "\n", 1);
+//         node = node->next;
+//     }
+// }
 
 void delete_all_node(LinkedList *list)
 {
     Node *node = list->head;
+    Node *temp = list->head;
     while (node != NULL)
     {
-        delete_node(list, node);
-        node = list->head;
+        node = node->next;
+        free(temp);
+        temp = node;
     }
+    list->num = 0;
+    list->head = list->tail = NULL;
 }
