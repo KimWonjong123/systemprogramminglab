@@ -155,15 +155,18 @@ enum MODE resolve_input(LinkedListStr *inputList)
             char *inputp2 = input; // starting point of word
             while (*inputp1 != '\0')
             {
-                while (*inputp1 != ' ')
+                while (*inputp1 != ' ' && *inputp1 != '\0')
                 {
                     inputp1++;
                 }
                 char *content = (char *)malloc(inputp1 - inputp2 + 1);
                 stringncpy(inputp2, content, inputp1 - inputp2);
                 insert_at_tail(inputList, create_node(++cnt, content));
-                inputp2 = ++inputp1;
                 free(content);
+                if (*inputp1 != '\0')
+                {
+                    inputp2 = ++inputp1;
+                }
             }
         }
         else
@@ -243,8 +246,39 @@ void handle_sword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     // write(1, "\n", 1);
 }
 
-void handle_mword(LinkedList *indexList, LinkedListStr *inputList)
+void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
 {
+    int numOfLine = indexList->num;
+    Node *idxNode = indexList->head;
+    NodeStr *toFind;
+    lseek(fd, idxNode->offset, SEEK_SET);
+    for (int i = 0; i < numOfLine; i++, idxNode = idxNode->next)
+    {
+        int j;
+        int inputNum = inputList->num;
+        toFind = inputList->head;
+
+        int size = idxNode->size;
+        char *content = (char *)malloc(size);
+        read(fd, content, size);
+        content[size - 1] = '\0';
+        for (j = 0; j < inputNum; j++, toFind = toFind->next)
+        {
+            if (!isincluded(toFind->content, content))
+            {
+                break;
+            }
+        }
+        if (j == inputNum)
+        {
+            char *lineNum = int_to_string(idxNode->lineNum);
+            write(1, lineNum, stringlen(lineNum));
+            free(lineNum);
+            write(1, " ", 1);
+        }
+        free(content);
+    }
+    write(1, "\n", 1);
     // int numOfLine = textFile->num;
     // int i;
     // NodeStr *text = textFile->head;
@@ -355,7 +389,7 @@ int main(int argc, char *argv[])
             handle_sword(&indexList, &inputList, fd);
             break;
         case MWORD:
-            // handle_mword(&textFile, &inputList);
+            handle_mword(&indexList, &inputList, fd);
             break;
         case CWORD:
             // handle_cword(&textFile, &inputList);
