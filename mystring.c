@@ -98,3 +98,15 @@ char *nextWord(char *str) {
 	}
 	return str;
 }
+
+void toLowercase(char *str)
+{
+	int len = stringlen(str);
+	for (int i = 0; i < len; i++)
+	{
+		if (str[i] >= 'A' && str[i] <= 'Z')
+		{
+			str[i] = 'a' + str[i] - 'A';
+		}
+	}
+}
