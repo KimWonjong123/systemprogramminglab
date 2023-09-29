@@ -46,6 +46,16 @@ char *int_to_string(int num)
     return ret;
 }
 
+char *extractLine(int fd, int size)
+{
+    int size = size;
+    char *content = (char *)malloc(size);
+    read(fd, content, size);
+    content[size - 1] = '\0';
+    toLowercase(content);
+    return content;
+}
+
 int read_line(int fd, char result[BUFSIZE])
 {
     int cnt = 0;
@@ -201,13 +211,8 @@ void handle_sword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     lseek(fd, idxNode->offset, SEEK_SET);
     for (int i = 0; i < indexList->num; i++, idxNode = idxNode->next)
     {
-        int size = idxNode->size;
-        // 오프셋, 사이즈 이용해서 파일에서 문장 추출
-        char *content = (char *)malloc(size);
-        read(fd, content, size);
-        content[size - 1] = '\0';
-        
-        
+        char *content = extractLine(fd, idxNode->size);
+
         char *pos = isincluded(toFind, content);
         while (pos != NULL)
         {
@@ -258,10 +263,7 @@ void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
         int inputNum = inputList->num;
         toFind = inputList->head;
 
-        int size = idxNode->size;
-        char *content = (char *)malloc(size);
-        read(fd, content, size);
-        content[size - 1] = '\0';
+        char *content = extractLine(fd, idxNode->size);
         for (j = 0; j < inputNum; j++, toFind = toFind->next)
         {
             if (!isincluded(toFind->content, content))
