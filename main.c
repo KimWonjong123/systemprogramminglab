@@ -363,6 +363,7 @@ void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
             // }
             startp = nextWord(startp);
         }
+        free(content);
         // char *pos = nextWord(content);
         // char *pos = isincluded(toFind, content);
         // while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
@@ -401,8 +402,31 @@ void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     // write(1, "\n", 1);
 }
 
-void handle_regexp(LinkedListStr *textFile, LinkedListStr *inputList)
+void handle_regexp(LinkedList *indexList, LinkedListStr *inputList, int fd)
 {
+    char *word1 = inputList->head->content;
+    char *word2 = inputList->tail->content;
+    int numOfLine = indexList->num;
+    Node *idxNode = indexList->head;
+    lseek(fd, idxNode->offset, SEEK_SET);
+    for (int i = 0; i < numOfLine; i++, idxNode = idxNode->next)
+    {
+        char *content = extractLine(fd, idxNode->size);
+        char *start = content;
+        if ((start = isincluded(word1, start)) != NULL)
+        {
+            if ((start = isincluded(word2, nextWord(nextWord(start)))) != NULL)
+            {
+                char *lineNum = int_to_string(idxNode->lineNum);
+                write(1, lineNum, stringlen(lineNum));
+                free(lineNum);
+                write(1, " ", 1);
+            }
+        }
+        free(content);
+    }
+    write(1, "\n", 1);
+
     // char *word1 = inputList->head->content;
     // char *word2 = inputList->tail->content;
     // int numOfLine = textFile->num;
@@ -466,7 +490,7 @@ int main(int argc, char *argv[])
             handle_cword(&indexList, &inputList, fd);
             break;
         case REGEXP:
-            // handle_regexp(&textFile, &inputList);
+            handle_regexp(&indexList, &inputList, fd);
             break;
         case EXIT:
             break;
