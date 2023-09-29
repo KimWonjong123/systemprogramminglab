@@ -1,9 +1,8 @@
 #include "linkedList.h"
 #include <unistd.h>
 #include <stdlib.h>
-#include "mystring.h"
 
-Node *create_node(long long offset, long long size, int lineNum)
+Node *create_node_idx(long long offset, long long size, int lineNum)
 {
     Node *node = (Node *)malloc(sizeof(Node));
     node->offset = offset;
@@ -14,7 +13,7 @@ Node *create_node(long long offset, long long size, int lineNum)
     return node;
 };
 
-void insert_at_head(LinkedList *list, Node *node)
+void insert_at_head_idx(LinkedList *list, Node *node)
 {
     if (list->head == NULL)
     {
@@ -29,7 +28,7 @@ void insert_at_head(LinkedList *list, Node *node)
     list->num++;
 }
 
-void insert_at_tail(LinkedList *list, Node *node)
+void insert_at_tail_idx(LinkedList *list, Node *node)
 {
     if (list->tail == NULL)
     {
@@ -44,7 +43,7 @@ void insert_at_tail(LinkedList *list, Node *node)
     list->num++;
 }
 
-void insert_at_next(LinkedList *list, Node *node, Node *toInsert)
+void insert_at_next_idx(LinkedList *list, Node *node, Node *toInsert)
 {
     if (node->next == NULL)
     {
@@ -57,7 +56,7 @@ void insert_at_next(LinkedList *list, Node *node, Node *toInsert)
     list->num++;
 }
 
-void insert_at_before(LinkedList *list, Node *node, Node *toInsert)
+void insert_at_before_idx(LinkedList *list, Node *node, Node *toInsert)
 {
     if (node->prev == NULL)
     {
@@ -70,7 +69,7 @@ void insert_at_before(LinkedList *list, Node *node, Node *toInsert)
     list->num++;
 }
 
-void delete_node(LinkedList *list, Node *node)
+void delete_node_idx(LinkedList *list, Node *node)
 {
     if (node->prev != NULL)
     {
@@ -101,7 +100,7 @@ void delete_node(LinkedList *list, Node *node)
 //     }
 // }
 
-void delete_all_node(LinkedList *list)
+void delete_all_node_idx(LinkedList *list)
 {
     Node *node = list->head;
     Node *temp = list->head;

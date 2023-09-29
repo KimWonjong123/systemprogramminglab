@@ -5,11 +5,12 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include "linkedList.h"
+#include "linkedListStr.h"
 #include "mystring.h"
 
 #define FILE_READ_ERROR "File Read Error!\n"
 #define FILE_OPEN_ERROR "File Open Error!\n"
-#define BUFSIZE 25565
+#define BUFSIZE 4096
 
 enum MODE
 {
@@ -74,7 +75,47 @@ int read_line(int fd, char result[BUFSIZE])
     return nbytes;
 }
 
-enum MODE resolve_input(LinkedList *inputList)
+void read_file(int fd, LinkedList *indexList)
+{
+    long long offset = 0;
+    char buffer[BUFSIZE];
+    int nbytes;
+
+    // read 4KB of file at once
+    while ((nbytes = read(fd, buffer, BUFSIZE)) > 0)
+    {
+        int lineCnt = 0;
+        char *start = buffer;
+        char *end;
+        long long size = 0;
+
+        while (start - buffer + 1 <= nbytes)
+        {
+            while(end - buffer + 1 <= nbytes && *end != '\n')
+            {
+                end++;
+            }
+
+            if (*end != '\n')
+            {
+                lseek(fd, -size, SEEK_CUR);
+                break;
+            }
+            
+            size = end - start + 1;
+            insert_at_tail_idx(indexList, create_node_idx(offset, size, ++lineCnt));
+            offset += size;
+            start = end + 1;
+        }
+    }
+    if (nbytes < 0)
+    {
+        write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
+        exit(-1);
+    }
+}
+
+enum MODE resolve_input(LinkedListStr *inputList)
 {
     enum MODE mode;
     char input[BUFSIZE];
@@ -148,10 +189,10 @@ enum MODE resolve_input(LinkedList *inputList)
     return mode;
 }
 
-void handle_sword(LinkedList *textFile, LinkedList *inputList)
+void handle_sword(LinkedListStr *textFile, LinkedListStr *inputList)
 {
-    Node *text = textFile->head;
-    Node *toFind = inputList->head;
+    NodeStr *text = textFile->head;
+    NodeStr *toFind = inputList->head;
     for (int i = 0; i < textFile->num; i++)
     {
         char *pos = isincluded(toFind->content, text->content);
@@ -172,12 +213,12 @@ void handle_sword(LinkedList *textFile, LinkedList *inputList)
     write(1, "\n", 1);
 }
 
-void handle_mword(LinkedList *textFile, LinkedList *inputList)
+void handle_mword(LinkedListStr *textFile, LinkedListStr *inputList)
 {
     int numOfLine = textFile->num;
     int i;
-    Node *text = textFile->head;
-    Node *toFind;
+    NodeStr *text = textFile->head;
+    NodeStr *toFind;
     for (i = 0; i < numOfLine; i++, text = text->next)
     {
         int j;
@@ -201,10 +242,10 @@ void handle_mword(LinkedList *textFile, LinkedList *inputList)
     write(1, "\n", 1);
 }
 
-void handle_cword(LinkedList *textFile, LinkedList *inputList)
+void handle_cword(LinkedListStr *textFile, LinkedListStr *inputList)
 {
-    Node *text = textFile->head;
-    Node *toFind = inputList->head;
+    NodeStr *text = textFile->head;
+    NodeStr *toFind = inputList->head;
     for (int i = 0; i < textFile->num; i++)
     {
         char *pos = issubstring(toFind->content, text->content);
@@ -225,12 +266,12 @@ void handle_cword(LinkedList *textFile, LinkedList *inputList)
     write(1, "\n", 1);
 }
 
-void handle_regexp(LinkedList *textFile, LinkedList *inputList)
+void handle_regexp(LinkedListStr *textFile, LinkedListStr *inputList)
 {
     char *word1 = inputList->head->content;
     char *word2 = inputList->tail->content;
     int numOfLine = textFile->num;
-    Node *text = textFile->head;
+    NodeStr *text = textFile->head;
     for (int i = 0; i < numOfLine; i++, text = text->next)
     {
         char *content = text->content;
@@ -253,8 +294,9 @@ int main(int argc, char *argv[])
     char *fileName = argv[1];
     int fd;
     char buffer[BUFSIZE];
-    LinkedList textFile = {0, NULL, NULL};
-    LinkedList inputList = {0, NULL, NULL};
+    LinkedListStr textFile = {0, NULL, NULL};
+    LinkedListStr inputList = {0, NULL, NULL};
+    LinkedList indexList = {0, NULL, NULL};
     int lineCnt = 0;
     // char input[BUFSIZE];
     enum MODE mode;
@@ -265,12 +307,13 @@ int main(int argc, char *argv[])
         exit(-1);
     }
 
+    read_file(fd, &indexList);
 
-    while (read_line(fd, buffer))
-    {
-        insert_at_tail(&textFile, create_node(++lineCnt, buffer));
-    }
-    insert_at_tail(&textFile, create_node(++lineCnt, buffer));
+    // while (read_line(fd, buffer))
+    // {
+    //     insert_at_tail(&textFile, create_node(++lineCnt, buffer));
+    // }
+    // insert_at_tail(&textFile, create_node(++lineCnt, buffer));
 
     do
     {

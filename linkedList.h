@@ -17,20 +17,20 @@ typedef struct list
     Node *tail;
 } LinkedList;
 
-Node *create_node(long long offset, long long size, int lineNum);
+Node *create_node_idx(long long offset, long long size, int lineNum);
 
-void insert_at_head(LinkedList *list, Node *node);
+void insert_at_head_idx(LinkedList *list, Node *node);
 
-void insert_at_tail(LinkedList *list, Node *node);
+void insert_at_tail_idx(LinkedList *list, Node *node);
 
-void insert_at_next(LinkedList *list, Node *node, Node *toInsert);
+void insert_at_next_idx(LinkedList *list, Node *node, Node *toInsert);
 
-void insert_at_before(LinkedList *list, Node *node, Node *toInsert);
+void insert_at_before_idx(LinkedList *list, Node *node, Node *toInsert);
 
-void delete_node(LinkedList *list, Node *Node);
+void delete_node_idx(LinkedList *list, Node *Node);
 
-void print_list(LinkedList *list);
+void print_list_idx(LinkedList *list);
 
-void delete_all_node(LinkedList *list);
+void delete_all_node_idx(LinkedList *list);
 
 #endif
