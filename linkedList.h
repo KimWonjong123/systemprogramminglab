@@ -3,6 +3,7 @@
 
 typedef struct _node
 {
+    int lineNum;
     long long offset;
     long long size;
     struct _node *next;
@@ -16,7 +17,7 @@ typedef struct list
     Node *tail;
 } LinkedList;
 
-Node *create_node(long long offset, long long size);
+Node *create_node(long long offset, long long size, int lineNum);
 
 void insert_at_head(LinkedList *list, Node *node);
 

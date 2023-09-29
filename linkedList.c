@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include "mystring.h"
 
-Node *create_node(long long offset, long long size)
+Node *create_node(long long offset, long long size, int lineNum)
 {
     Node *node = (Node *)malloc(sizeof(Node));
     node->offset = offset;
     node->size = size;
+    node->lineNum = lineNum;
     node->next = NULL;
     node->prev = NULL;
     return node;
