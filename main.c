@@ -80,11 +80,11 @@ void read_file(int fd, LinkedList *indexList)
     long long offset = 0;
     char buffer[BUFSIZE];
     int nbytes;
+    int lineCnt = 0;
 
     // read 4KB of file at once
     while ((nbytes = read(fd, buffer, BUFSIZE)) > 0)
     {
-        int lineCnt = 0;
         char *start = buffer;
         char *end = buffer;
         long long size = 0;
