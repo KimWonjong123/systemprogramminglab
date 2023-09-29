@@ -214,6 +214,7 @@ void handle_sword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     Node *idxNode = indexList->head;
     char *toFind = inputList->head->content;
     lseek(fd, idxNode->offset, SEEK_SET);
+    int flag = 0;
     for (int i = 0; i < indexList->num; i++, idxNode = idxNode->next)
     {
         char *content = extractLine(fd, idxNode->size);
@@ -221,6 +222,7 @@ void handle_sword(LinkedList *indexList, LinkedListStr *inputList, int fd)
         char *pos = isincluded(toFind, content);
         while (pos != NULL)
         {
+            flag = 1;
             char *lineNum = int_to_string(idxNode->lineNum);
             char *idx = int_to_string(pos - content);
             write(1, lineNum, stringlen(lineNum));
@@ -233,27 +235,11 @@ void handle_sword(LinkedList *indexList, LinkedListStr *inputList, int fd)
         }
         free(content);
     }
+    if (flag)
+    {
+        lseek(1, -1, SEEK_CUR);
+    }
     write(1, "\n", 1);
-    // NodeStr *text = textFile->head;
-    // NodeStr *toFind = inputList->head;
-    // for (int i = 0; i < textFile->num; i++)
-    // {
-    //     char *pos = isincluded(toFind->content, text->content);
-    //     while (pos != NULL)
-    //     {
-    //         char *lineNum = int_to_string(text->lineNum);
-    //         char *idx = int_to_string(pos - text->content);
-    //         write(1, lineNum, stringlen(lineNum));
-    //         write(1, ":", 1);
-    //         write(1, idx, stringlen(idx));
-    //         write(1, " ", 1);
-    //         free(lineNum);
-    //         free(idx);
-    //         pos = isincluded(toFind->content, pos + 1);
-    //     }
-    //     text = text->next;
-    // }
-    // write(1, "\n", 1);
 }
 
 void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
@@ -262,6 +248,7 @@ void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     Node *idxNode = indexList->head;
     NodeStr *toFind;
     lseek(fd, idxNode->offset, SEEK_SET);
+    int flag = 0;
     for (int i = 0; i < numOfLine; i++, idxNode = idxNode->next)
     {
         int j;
@@ -278,6 +265,7 @@ void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
         }
         if (j == inputNum)
         {
+            flag = 1;
             char *lineNum = int_to_string(idxNode->lineNum);
             write(1, lineNum, stringlen(lineNum));
             free(lineNum);
@@ -285,32 +273,11 @@ void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
         }
         free(content);
     }
+    if (flag)
+    {
+        lseek(1, -1, SEEK_CUR);
+    }
     write(1, "\n", 1);
-    // int numOfLine = textFile->num;
-    // int i;
-    // NodeStr *text = textFile->head;
-    // NodeStr *toFind;
-    // for (i = 0; i < numOfLine; i++, text = text->next)
-    // {
-    //     int j;
-    //     int inputNum = inputList->num;
-    //     toFind = inputList->head;
-    //     for (j = 0; j < inputNum; j++, toFind = toFind->next)
-    //     {
-    //         if (!isincluded(toFind->content, text->content))
-    //         {
-    //             break;
-    //         }
-    //     }
-    //     if (j == inputNum)
-    //     {
-    //         char *lineNum = int_to_string(text->lineNum);
-    //         write(1, lineNum, stringlen(lineNum));
-    //         free(lineNum);
-    //         write(1, " ", 1);
-    //     }
-    // }
-    // write(1, "\n", 1);
 }
 
 void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
@@ -318,6 +285,7 @@ void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     Node *idxNode = indexList->head;
     char *toFind = inputList->head->content;
     lseek(fd, idxNode->offset, SEEK_SET);
+    int flag = 0;
     for (int i = 0; i < indexList->num; i++, idxNode = idxNode->next)
     {
         char *content = extractLine(fd, idxNode->size);
@@ -334,6 +302,7 @@ void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
             {
                 if (*(pos + len) == ' ' || *(pos + len) == '\t' || *(pos + len) == '\0')
                 {
+                    flag = 1;
                     char *lineNum = int_to_string(idxNode->lineNum);
                     char *idx = int_to_string(pos - content);
                     write(1, lineNum, stringlen(lineNum));
@@ -344,62 +313,15 @@ void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
                     free(idx);
                 }
             }
-            // if (*(pos + len) == ' ' || *(pos + len) == '\t' || *(pos + len) == '\0')
-            // {
-            //     char *substr = (char *)malloc(len + 1);
-            //     stringncpy(pos, substr, len);
-            //     if (stringcmp(substr, toFind))
-            //     {
-            //         char *lineNum = int_to_string(idxNode->lineNum);
-            //         char *idx = int_to_string(pos - content);
-            //         write(1, lineNum, stringlen(lineNum));
-            //         write(1, ":", 1);
-            //         write(1, idx, stringlen(idx));
-            //         write(1, " ", 1);
-            //         free(lineNum);
-            //         free(idx);
-            //     }
-            //     free(substr);
-            // }
             startp = nextWord(startp);
         }
         free(content);
-        // char *pos = nextWord(content);
-        // char *pos = isincluded(toFind, content);
-        // while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
-        // {
-        //     char *lineNum = int_to_string(idxNode->lineNum);
-        //     char *idx = int_to_string(pos - content);
-        //     write(1, lineNum, stringlen(lineNum));
-        //     write(1, ":", 1);
-        //     write(1, idx, stringlen(idx));
-        //     write(1, " ", 1);
-        //     free(lineNum);
-        //     free(idx);
-        //     pos = isincluded(toFind, pos + 1);
-        // }
+    }
+    if (flag)
+    {
+        lseek(1, -1, SEEK_CUR);
     }
     write(1, "\n", 1);
-    // NodeStr *text = textFile->head;
-    // NodeStr *toFind = inputList->head;
-    // for (int i = 0; i < textFile->num; i++)
-    // {
-    //     char *pos = issubstring(toFind->content, text->content);
-    //     while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
-    //     {
-    //         char *lineNum = int_to_string(text->lineNum);
-    //         char *idx = int_to_string(pos - text->content);
-    //         write(1, lineNum, stringlen(lineNum));
-    //         write(1, ":", 1);
-    //         write(1, idx, stringlen(idx));
-    //         write(1, " ", 1);
-    //         free(lineNum);
-    //         free(idx);
-    //         pos = isincluded(toFind->content, pos + 1);
-    //     }
-    //     text = text->next;
-    // }
-    // write(1, "\n", 1);
 }
 
 void handle_regexp(LinkedList *indexList, LinkedListStr *inputList, int fd)
@@ -409,6 +331,7 @@ void handle_regexp(LinkedList *indexList, LinkedListStr *inputList, int fd)
     int numOfLine = indexList->num;
     Node *idxNode = indexList->head;
     lseek(fd, idxNode->offset, SEEK_SET);
+    int flag = 0;
     for (int i = 0; i < numOfLine; i++, idxNode = idxNode->next)
     {
         char *content = extractLine(fd, idxNode->size);
@@ -417,6 +340,7 @@ void handle_regexp(LinkedList *indexList, LinkedListStr *inputList, int fd)
         {
             if ((start = isincluded(word2, nextWord(nextWord(start)))) != NULL)
             {
+                flag = 1;
                 char *lineNum = int_to_string(idxNode->lineNum);
                 write(1, lineNum, stringlen(lineNum));
                 free(lineNum);
@@ -425,27 +349,11 @@ void handle_regexp(LinkedList *indexList, LinkedListStr *inputList, int fd)
         }
         free(content);
     }
+    if (flag)
+    {
+        lseek(1, -1, SEEK_CUR);
+    }
     write(1, "\n", 1);
-
-    // char *word1 = inputList->head->content;
-    // char *word2 = inputList->tail->content;
-    // int numOfLine = textFile->num;
-    // NodeStr *text = textFile->head;
-    // for (int i = 0; i < numOfLine; i++, text = text->next)
-    // {
-    //     char *content = text->content;
-    //     if ((content = isincluded(word1, content)) != NULL)
-    //     {
-    //         if ((content = isincluded(word2, nextWord(content))) != NULL)
-    //         {
-    //             char *lineNum = int_to_string(text->lineNum);
-    //             write(1, lineNum, stringlen(lineNum));
-    //             free(lineNum);
-    //             write(1, " ", 1);
-    //         }
-    //     }
-    // }
-    // write(1, "\n", 1);
 }
 
 int main(int argc, char *argv[])
@@ -467,12 +375,6 @@ int main(int argc, char *argv[])
     }
 
     read_file(fd, &indexList);
-
-    // while (read_line(fd, buffer))
-    // {
-    //     insert_at_tail(&textFile, create_node(++lineCnt, buffer));
-    // }
-    // insert_at_tail(&textFile, create_node(++lineCnt, buffer));
 
     do
     {
@@ -500,7 +402,6 @@ int main(int argc, char *argv[])
 
     } while (mode != EXIT);
 
-    // delete_all_node(&textFile);
     delete_all_node(&inputList);
     delete_all_node_idx(&indexList);
 
