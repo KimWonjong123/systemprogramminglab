@@ -96,7 +96,7 @@ void read_file(int fd, LinkedList *indexList)
                 end++;
             }
 
-            if (*end != '\n')
+            if (end - buffer + 1 > nbytes)
             {
                 lseek(fd, -size, SEEK_CUR);
                 break;
@@ -191,102 +191,102 @@ enum MODE resolve_input(LinkedListStr *inputList)
 
 void handle_sword(LinkedListStr *textFile, LinkedListStr *inputList)
 {
-    NodeStr *text = textFile->head;
-    NodeStr *toFind = inputList->head;
-    for (int i = 0; i < textFile->num; i++)
-    {
-        char *pos = isincluded(toFind->content, text->content);
-        while (pos != NULL)
-        {
-            char *lineNum = int_to_string(text->lineNum);
-            char *idx = int_to_string(pos - text->content);
-            write(1, lineNum, stringlen(lineNum));
-            write(1, ":", 1);
-            write(1, idx, stringlen(idx));
-            write(1, " ", 1);
-            free(lineNum);
-            free(idx);
-            pos = isincluded(toFind->content, pos + 1);
-        }
-        text = text->next;
-    }
-    write(1, "\n", 1);
+    // NodeStr *text = textFile->head;
+    // NodeStr *toFind = inputList->head;
+    // for (int i = 0; i < textFile->num; i++)
+    // {
+    //     char *pos = isincluded(toFind->content, text->content);
+    //     while (pos != NULL)
+    //     {
+    //         char *lineNum = int_to_string(text->lineNum);
+    //         char *idx = int_to_string(pos - text->content);
+    //         write(1, lineNum, stringlen(lineNum));
+    //         write(1, ":", 1);
+    //         write(1, idx, stringlen(idx));
+    //         write(1, " ", 1);
+    //         free(lineNum);
+    //         free(idx);
+    //         pos = isincluded(toFind->content, pos + 1);
+    //     }
+    //     text = text->next;
+    // }
+    // write(1, "\n", 1);
 }
 
 void handle_mword(LinkedListStr *textFile, LinkedListStr *inputList)
 {
-    int numOfLine = textFile->num;
-    int i;
-    NodeStr *text = textFile->head;
-    NodeStr *toFind;
-    for (i = 0; i < numOfLine; i++, text = text->next)
-    {
-        int j;
-        int inputNum = inputList->num;
-        toFind = inputList->head;
-        for (j = 0; j < inputNum; j++, toFind = toFind->next)
-        {
-            if (!isincluded(toFind->content, text->content))
-            {
-                break;
-            }
-        }
-        if (j == inputNum)
-        {
-            char *lineNum = int_to_string(text->lineNum);
-            write(1, lineNum, stringlen(lineNum));
-            free(lineNum);
-            write(1, " ", 1);
-        }
-    }
-    write(1, "\n", 1);
+    // int numOfLine = textFile->num;
+    // int i;
+    // NodeStr *text = textFile->head;
+    // NodeStr *toFind;
+    // for (i = 0; i < numOfLine; i++, text = text->next)
+    // {
+    //     int j;
+    //     int inputNum = inputList->num;
+    //     toFind = inputList->head;
+    //     for (j = 0; j < inputNum; j++, toFind = toFind->next)
+    //     {
+    //         if (!isincluded(toFind->content, text->content))
+    //         {
+    //             break;
+    //         }
+    //     }
+    //     if (j == inputNum)
+    //     {
+    //         char *lineNum = int_to_string(text->lineNum);
+    //         write(1, lineNum, stringlen(lineNum));
+    //         free(lineNum);
+    //         write(1, " ", 1);
+    //     }
+    // }
+    // write(1, "\n", 1);
 }
 
 void handle_cword(LinkedListStr *textFile, LinkedListStr *inputList)
 {
-    NodeStr *text = textFile->head;
-    NodeStr *toFind = inputList->head;
-    for (int i = 0; i < textFile->num; i++)
-    {
-        char *pos = issubstring(toFind->content, text->content);
-        while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
-        {
-            char *lineNum = int_to_string(text->lineNum);
-            char *idx = int_to_string(pos - text->content);
-            write(1, lineNum, stringlen(lineNum));
-            write(1, ":", 1);
-            write(1, idx, stringlen(idx));
-            write(1, " ", 1);
-            free(lineNum);
-            free(idx);
-            pos = isincluded(toFind->content, pos + 1);
-        }
-        text = text->next;
-    }
-    write(1, "\n", 1);
+    // NodeStr *text = textFile->head;
+    // NodeStr *toFind = inputList->head;
+    // for (int i = 0; i < textFile->num; i++)
+    // {
+    //     char *pos = issubstring(toFind->content, text->content);
+    //     while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
+    //     {
+    //         char *lineNum = int_to_string(text->lineNum);
+    //         char *idx = int_to_string(pos - text->content);
+    //         write(1, lineNum, stringlen(lineNum));
+    //         write(1, ":", 1);
+    //         write(1, idx, stringlen(idx));
+    //         write(1, " ", 1);
+    //         free(lineNum);
+    //         free(idx);
+    //         pos = isincluded(toFind->content, pos + 1);
+    //     }
+    //     text = text->next;
+    // }
+    // write(1, "\n", 1);
 }
 
 void handle_regexp(LinkedListStr *textFile, LinkedListStr *inputList)
 {
-    char *word1 = inputList->head->content;
-    char *word2 = inputList->tail->content;
-    int numOfLine = textFile->num;
-    NodeStr *text = textFile->head;
-    for (int i = 0; i < numOfLine; i++, text = text->next)
-    {
-        char *content = text->content;
-        if ((content = isincluded(word1, content)) != NULL)
-        {
-            if ((content = isincluded(word2, nextWord(content))) != NULL)
-            {
-                char *lineNum = int_to_string(text->lineNum);
-                write(1, lineNum, stringlen(lineNum));
-                free(lineNum);
-                write(1, " ", 1);
-            }
-        }
-    }
-    write(1, "\n", 1);
+    // char *word1 = inputList->head->content;
+    // char *word2 = inputList->tail->content;
+    // int numOfLine = textFile->num;
+    // NodeStr *text = textFile->head;
+    // for (int i = 0; i < numOfLine; i++, text = text->next)
+    // {
+    //     char *content = text->content;
+    //     if ((content = isincluded(word1, content)) != NULL)
+    //     {
+    //         if ((content = isincluded(word2, nextWord(content))) != NULL)
+    //         {
+    //             char *lineNum = int_to_string(text->lineNum);
+    //             write(1, lineNum, stringlen(lineNum));
+    //             free(lineNum);
+    //             write(1, " ", 1);
+    //         }
+    //     }
+    // }
+    // write(1, "\n", 1);
 }
 
 int main(int argc, char *argv[])
@@ -325,13 +325,13 @@ int main(int argc, char *argv[])
             handle_sword(&textFile, &inputList);
             break;
         case MWORD:
-            handle_mword(&textFile, &inputList);
+            // handle_mword(&textFile, &inputList);
             break;
         case CWORD:
-            handle_cword(&textFile, &inputList);
+            // handle_cword(&textFile, &inputList);
             break;
         case REGEXP:
-            handle_regexp(&textFile, &inputList);
+            // handle_regexp(&textFile, &inputList);
             break;
         case EXIT:
             break;
