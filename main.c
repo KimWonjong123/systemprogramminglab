@@ -48,10 +48,16 @@ char *int_to_string(int num)
 
 char *extractLine(int fd, int size)
 {
-    int size = size;
-    char *content = (char *)malloc(size);
+    char *content = (char *)malloc(size + 1);
     read(fd, content, size);
+    if (content[size - 1] != '\n')
+    {
+        content[size] = '\0';
+    }
+    else
+    {
     content[size - 1] = '\0';
+    }
     toLowercase(content);
     return content;
 }
@@ -127,7 +133,6 @@ void read_file(int fd, LinkedList *indexList)
         write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
         exit(-1);
     }
-    printf("reading file done...\n");
 }
 
 enum MODE resolve_input(LinkedListStr *inputList)
@@ -308,8 +313,72 @@ void handle_mword(LinkedList *indexList, LinkedListStr *inputList, int fd)
     // write(1, "\n", 1);
 }
 
-void handle_cword(LinkedListStr *textFile, LinkedListStr *inputList)
+void handle_cword(LinkedList *indexList, LinkedListStr *inputList, int fd)
 {
+    Node *idxNode = indexList->head;
+    char *toFind = inputList->head->content;
+    lseek(fd, idxNode->offset, SEEK_SET);
+    for (int i = 0; i < indexList->num; i++, idxNode = idxNode->next)
+    {
+        char *content = extractLine(fd, idxNode->size);
+        char *startp = content;
+        int len = stringlen(toFind);
+        while (*startp != '\0')
+        {
+            char *pos = issubstring(toFind, startp);
+            if (pos == NULL)
+            {
+                break;
+            }
+            if (pos == startp)
+            {
+                if (*(pos + len) == ' ' || *(pos + len) == '\t' || *(pos + len) == '\0')
+                {
+                    char *lineNum = int_to_string(idxNode->lineNum);
+                    char *idx = int_to_string(pos - content);
+                    write(1, lineNum, stringlen(lineNum));
+                    write(1, ":", 1);
+                    write(1, idx, stringlen(idx));
+                    write(1, " ", 1);
+                    free(lineNum);
+                    free(idx);
+                }
+            }
+            // if (*(pos + len) == ' ' || *(pos + len) == '\t' || *(pos + len) == '\0')
+            // {
+            //     char *substr = (char *)malloc(len + 1);
+            //     stringncpy(pos, substr, len);
+            //     if (stringcmp(substr, toFind))
+            //     {
+            //         char *lineNum = int_to_string(idxNode->lineNum);
+            //         char *idx = int_to_string(pos - content);
+            //         write(1, lineNum, stringlen(lineNum));
+            //         write(1, ":", 1);
+            //         write(1, idx, stringlen(idx));
+            //         write(1, " ", 1);
+            //         free(lineNum);
+            //         free(idx);
+            //     }
+            //     free(substr);
+            // }
+            startp = nextWord(startp);
+        }
+        // char *pos = nextWord(content);
+        // char *pos = isincluded(toFind, content);
+        // while (pos != NULL && *(pos + 1) != ' ' && *(pos + 1) != '\t')
+        // {
+        //     char *lineNum = int_to_string(idxNode->lineNum);
+        //     char *idx = int_to_string(pos - content);
+        //     write(1, lineNum, stringlen(lineNum));
+        //     write(1, ":", 1);
+        //     write(1, idx, stringlen(idx));
+        //     write(1, " ", 1);
+        //     free(lineNum);
+        //     free(idx);
+        //     pos = isincluded(toFind, pos + 1);
+        // }
+    }
+    write(1, "\n", 1);
     // NodeStr *text = textFile->head;
     // NodeStr *toFind = inputList->head;
     // for (int i = 0; i < textFile->num; i++)
@@ -394,7 +463,7 @@ int main(int argc, char *argv[])
             handle_mword(&indexList, &inputList, fd);
             break;
         case CWORD:
-            // handle_cword(&textFile, &inputList);
+            handle_cword(&indexList, &inputList, fd);
             break;
         case REGEXP:
             // handle_regexp(&textFile, &inputList);
