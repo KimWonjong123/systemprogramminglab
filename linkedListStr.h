@@ -1,16 +1,16 @@
 #ifndef __LINKEDLISTSTR_H__
 #define __LINKEDLISTSTR_H__
 
-typedef struct _node
+typedef struct __node
 {
     int lineNum;
     int length;
     char *content;
-    struct _node *next;
-    struct _node *prev;
+    struct __node *next;
+    struct __node *prev;
 } NodeStr;
 
-typedef struct list
+typedef struct _list
 {
     int num;
     NodeStr *head;

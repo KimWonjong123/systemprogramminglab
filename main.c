@@ -86,7 +86,7 @@ void read_file(int fd, LinkedList *indexList)
     {
         int lineCnt = 0;
         char *start = buffer;
-        char *end;
+        char *end = buffer;
         long long size = 0;
 
         while (start - buffer + 1 <= nbytes)
@@ -95,17 +95,21 @@ void read_file(int fd, LinkedList *indexList)
             {
                 end++;
             }
+            size = end - start + 1;
 
             if (end - buffer + 1 > nbytes)
             {
-                lseek(fd, -size, SEEK_CUR);
+                char test[1];
+                if (read(fd, test, 1) != 0)
+                {
+                    lseek(fd, -size, SEEK_CUR);
+                }
                 break;
             }
             
-            size = end - start + 1;
             insert_at_tail_idx(indexList, create_node_idx(offset, size, ++lineCnt));
             offset += size;
-            start = end + 1;
+            start = ++end;
         }
     }
     if (nbytes < 0)
@@ -113,6 +117,7 @@ void read_file(int fd, LinkedList *indexList)
         write(2, FILE_READ_ERROR, stringlen(FILE_READ_ERROR));
         exit(-1);
     }
+    printf("reading file done...\n");
 }
 
 enum MODE resolve_input(LinkedListStr *inputList)
@@ -178,19 +183,44 @@ enum MODE resolve_input(LinkedListStr *inputList)
     else
     {
         mode = CWORD;
-        // if (mode == CWORD)
-        // {
         char *content = (char *)malloc(stringlen(input) - 1);
         stringncpy(input + 1, content, stringlen(input) - 2);
         insert_at_tail(inputList, create_node(++cnt, content));
         free(content);
-        // }
     }
     return mode;
 }
 
-void handle_sword(LinkedListStr *textFile, LinkedListStr *inputList)
+void handle_sword(LinkedList *indexList, LinkedListStr *inputList, int fd)
 {
+    Node *idxNode = indexList->head;
+    char *toFind = inputList->head->content;
+    lseek(fd, idxNode->offset, SEEK_SET);
+    for (int i = 0; i < indexList->num; i++, idxNode = idxNode->next)
+    {
+        int size = idxNode->size;
+        // 오프셋, 사이즈 이용해서 파일에서 문장 추출
+        char *content = (char *)malloc(size);
+        read(fd, content, size);
+        content[size - 1] = '\0';
+        
+        
+        char *pos = isincluded(toFind, content);
+        while (pos != NULL)
+        {
+            char *lineNum = int_to_string(idxNode->lineNum);
+            char *idx = int_to_string(pos - content);
+            write(1, lineNum, stringlen(lineNum));
+            write(1, ":", 1);
+            write(1, idx, stringlen(idx));
+            write(1, " ", 1);
+            free(lineNum);
+            free(idx);
+            pos = isincluded(toFind, pos + 1);
+        }
+        free(content);
+    }
+    write(1, "\n", 1);
     // NodeStr *text = textFile->head;
     // NodeStr *toFind = inputList->head;
     // for (int i = 0; i < textFile->num; i++)
@@ -213,7 +243,7 @@ void handle_sword(LinkedListStr *textFile, LinkedListStr *inputList)
     // write(1, "\n", 1);
 }
 
-void handle_mword(LinkedListStr *textFile, LinkedListStr *inputList)
+void handle_mword(LinkedList *indexList, LinkedListStr *inputList)
 {
     // int numOfLine = textFile->num;
     // int i;
@@ -293,11 +323,11 @@ int main(int argc, char *argv[])
 {
     char *fileName = argv[1];
     int fd;
-    char buffer[BUFSIZE];
-    LinkedListStr textFile = {0, NULL, NULL};
+    // char buffer[BUFSIZE];
+    // LinkedListStr textFile = {0, NULL, NULL};
     LinkedListStr inputList = {0, NULL, NULL};
     LinkedList indexList = {0, NULL, NULL};
-    int lineCnt = 0;
+    // int lineCnt = 0;
     // char input[BUFSIZE];
     enum MODE mode;
 
@@ -322,7 +352,7 @@ int main(int argc, char *argv[])
         switch (mode)
         {
         case SWORD:
-            handle_sword(&textFile, &inputList);
+            handle_sword(&indexList, &inputList, fd);
             break;
         case MWORD:
             // handle_mword(&textFile, &inputList);
@@ -341,7 +371,7 @@ int main(int argc, char *argv[])
 
     } while (mode != EXIT);
 
-    delete_all_node(&textFile);
+    // delete_all_node(&textFile);
     delete_all_node(&inputList);
 
     close(fd);

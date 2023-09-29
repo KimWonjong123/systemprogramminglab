@@ -29,7 +29,7 @@ void insert_at_before_idx(LinkedList *list, Node *node, Node *toInsert);
 
 void delete_node_idx(LinkedList *list, Node *Node);
 
-void print_list_idx(LinkedList *list);
+// void print_list_idx(LinkedList *list);
 
 void delete_all_node_idx(LinkedList *list);
 

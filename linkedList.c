@@ -47,7 +47,7 @@ void insert_at_next_idx(LinkedList *list, Node *node, Node *toInsert)
 {
     if (node->next == NULL)
     {
-        insert_at_tail(list, node);
+        insert_at_tail_idx(list, node);
         return;
     }
     toInsert->prev = node;
@@ -60,7 +60,7 @@ void insert_at_before_idx(LinkedList *list, Node *node, Node *toInsert)
 {
     if (node->prev == NULL)
     {
-        insert_at_head(list, node);
+        insert_at_head_idx(list, node);
         return;
     }
     toInsert->next = node;
