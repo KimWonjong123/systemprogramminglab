@@ -373,6 +373,7 @@ int main(int argc, char *argv[])
 
     // delete_all_node(&textFile);
     delete_all_node(&inputList);
+    delete_all_node_idx(&indexList);
 
     close(fd);
 
