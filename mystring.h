@@ -43,4 +43,6 @@ void stringncpy(char *source, char *dest, int nbytes);
 */
 char *nextWord(char *str);
 
+void toLowercase(char *str);
+
 #endif
