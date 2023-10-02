@@ -1,6 +1,9 @@
 *.txt
-pa1/pa1
 *.out
 *.tar.gz
 *.tgz
 *.tar
+
+#executable files
+pa1/pa1
+week6/ex5
