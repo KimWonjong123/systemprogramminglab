@@ -77,6 +77,8 @@ int main(void) {
         }
 
         // parse cron condition
+        t = time(NULL);
+        tm = localtime(&t);
         int min = tm->tm_min, hour = tm->tm_hour;
         if (token[0][0] != '*')
             min = strtol(token[0], NULL, 10);
@@ -108,10 +110,10 @@ int main(void) {
         // pid = fork();
         // execl("/bin/sh", "/bin/sh", "-c", argv[2], (char*) NULL);
 
+        lseek(fd, 0, SEEK_SET);
+
         t = time(NULL);
         tm = localtime(&t);
-
-        lseek(fd, 0, SEEK_SET);
 
         sleep(60 - tm->tm_sec % 60);
     }
