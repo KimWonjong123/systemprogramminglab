@@ -117,6 +117,7 @@ int main(void) {
     }
 
     closelog();
+    close(fd);
 
     return 0;
 }
