@@ -91,7 +91,7 @@ int main(void) {
         // execute cron
         if (min == tm->tm_min && hour == tm->tm_hour)
         {
-            syslog(LOG_INFO, "executing cron. path = %s", path);
+            syslog(LOG_INFO, "executing cron, path = %s", path);
             pid_t pid = fork();
             if (pid == 0)
             {
