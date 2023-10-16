@@ -1,0 +1,11 @@
+# Makefile
+TARGET=w8
+CXX=gcc
+CXXFLAGS=
+SRCS=main.c
+
+$(TARGET): $(SRCS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+clean:
+	rm $(TARGET) || true
