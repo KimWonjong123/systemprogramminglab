@@ -99,7 +99,7 @@ int main(void) {
             {
                 execl("/bin/sh", "/bin/sh", "-c", path, (char *)NULL);
             }
-            wait(NULL);
+	    while (waitpid(-1, NULL, WNOHANG) > 0) ;
         }
 
         // insert your code
