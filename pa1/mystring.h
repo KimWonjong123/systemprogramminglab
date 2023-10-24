@@ -40,6 +40,7 @@ void stringncpy(char *source, char *dest, int nbytes);
 /*
     returns a pointer to the starting point of next word
     or the end of the given string.
+    if (&str == '\0'), return NULL
 */
 char *nextWord(char *str);
 
