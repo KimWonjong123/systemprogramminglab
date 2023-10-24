@@ -90,7 +90,7 @@ void stringncpy(char *source, char *dest, int nbytes) {
 }
 
 char *nextWord(char *str) {
-	if (&str == '\0')
+	if (*str == '\0')
 	{
 		return NULL;
 	}
