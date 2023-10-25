@@ -11,7 +11,9 @@
 #include <stdbool.h>
 #include "linkedList.h"
 
-bool parse_commands(char *cmd, LinkedList *pipelines)
+char *REDIRECTIONS[] = {" < ", " > ", " << ", " >> "};
+
+bool parse_commands(char *cmd, LinkedList *commands)
 {
     bool daemon = false;
 
@@ -30,10 +32,61 @@ bool parse_commands(char *cmd, LinkedList *pipelines)
             pos++;
         Node *node = create_node(COMMANDS, pos);
         pos = strtok_r(NULL, "|", &next);
-        insert_at_tail(pipelines, node);
+        insert_at_tail(commands, node);
     }
 
     return daemon;
+}
+
+int parse_command(char *cmd, char *args[])
+{
+    int cnt = 0;
+    char *pos = cmd;
+    char *filename1 = NULL, *filename2 = NULL;
+    char *command_end = NULL;
+    printf("cmd : \"%s\"\n", cmd);
+
+    // parse fimename
+    for (int i = 0; i < 4; i++)
+    {
+        int len = strlen(REDIRECTIONS[i]);
+        char *pos_save = pos;
+        printf("searching \"%s\"\n", REDIRECTIONS[i]);
+        if ((pos = strstr(pos, REDIRECTIONS[i])))
+        {
+            printf("found\n");
+            if (filename1 == NULL)
+            {
+                filename1 = pos + len;
+            }
+            else if (filename1 != NULL)
+            {
+                filename2 = pos + len;
+            }
+            *pos++ = '\0';
+            command_end = command_end == NULL ? pos : command_end;
+        }
+
+        if (pos == NULL)
+        {
+            pos = pos_save;
+        }
+    }
+
+    // parse arguments
+    *command_end = '\0';
+    pos = cmd;
+    char *next;
+    char *ptr = strtok_r(pos, " ", &next);
+    while (ptr)
+    {
+        args[cnt++] = ptr;
+        ptr = strtok_r(NULL, " ", &next);
+    }
+    args[cnt++] = filename1;
+    args[cnt++] = filename2;
+
+    return cnt;
 }
 
 int main()
@@ -55,14 +108,21 @@ int main()
         }
         cmd[strlen(cmd) - 1] = '\0';
 
-        if (!strcmp(cmd, "exit")) {
+        if (!strcmp(cmd, "exit"))
+        {
             printf("exiting minishell...\n");
             exit(0);
         }
 
-        bDaemon = parse_commands(cmd, &commands);
-        print_list(&commands);
-        printf("daemon: %s\n", bDaemon ? "true" : "false");
+        // bDaemon = parse_commands(cmd, &commands);
+
+        char *args[201];
+        int cnt = parse_command(cmd, args);
+
+        for (int i = 0; i < cnt; i++)
+        {
+            printf("%s\n", args[i] != NULL ? args[i] : "NULL");
+        }
 
         delete_all_node(&tokens);
         delete_all_node(&commands);
