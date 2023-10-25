@@ -24,6 +24,7 @@ bool parse_commands(char *cmd, LinkedList *commands)
         cmd[strlen(cmd) - 2] = '\0';
     }
 
+    // parse commands
     char *next;
     char *pos = strtok_r(cmd, "|", &next);
     while (pos)

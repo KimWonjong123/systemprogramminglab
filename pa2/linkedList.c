@@ -1,16 +1,16 @@
 #include "linkedList.h"
 #include <unistd.h>
 #include <stdlib.h>
-#include "mystring.h"
+#include <string.h>
 #include "util.h"
 
 Node *create_node(TYPE type, char *content)
 {
     Node *node = (Node *)malloc(sizeof(Node));
     node->type = type;
-    node->content = (char *)malloc(stringlen(content) + 1);
-    stringcpy(content, node->content);
-    node->length = stringlen(node->content);
+    node->content = (char *)malloc(strlen(content) + 1);
+    strcpy(node->content, content);
+    node->length = strlen(node->content);
     node->next = NULL;
     node->prev = NULL;
     return node;
