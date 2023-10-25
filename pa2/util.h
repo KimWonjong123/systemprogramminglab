@@ -3,13 +3,13 @@
 
 typedef enum __type
 {
-    commandline,
-    pipline,
-    commands,
-    command,
-    eecutable,
-    builtin,
-    path
+    COMMANDLINE,
+    PIPELINE,
+    COMMANDS,
+    COMMAND,
+    EXECUTABLE,
+    BUILTIN,
+    PATH
 } TYPE;
 
 #endif
