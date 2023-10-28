@@ -1,11 +1,12 @@
 #include "linkedList.h"
-#include <unistd.h>
+
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
 #include "util.h"
 
-Node *create_node(TYPE type, char *content)
-{
+Node *create_node(TYPE type, char *content) {
     Node *node = (Node *)malloc(sizeof(Node));
     node->type = type;
     node->content = (char *)malloc(strlen(content) + 1);
@@ -16,14 +17,10 @@ Node *create_node(TYPE type, char *content)
     return node;
 };
 
-void insert_at_head(LinkedList *list, Node *node)
-{
-    if (list->head == NULL)
-    {
+void insert_at_head(LinkedList *list, Node *node) {
+    if (list->head == NULL) {
         list->head = list->tail = node;
-    }
-    else
-    {
+    } else {
         node->next = list->head;
         list->head->prev = node;
         list->head = node;
@@ -31,14 +28,10 @@ void insert_at_head(LinkedList *list, Node *node)
     list->num++;
 }
 
-void insert_at_tail(LinkedList *list, Node *node)
-{
-    if (list->tail == NULL)
-    {
+void insert_at_tail(LinkedList *list, Node *node) {
+    if (list->tail == NULL) {
         list->head = list->tail = node;
-    }
-    else
-    {
+    } else {
         node->prev = list->tail;
         list->tail->next = node;
         list->tail = node;
@@ -46,10 +39,8 @@ void insert_at_tail(LinkedList *list, Node *node)
     list->num++;
 }
 
-void insert_at_next(LinkedList *list, Node *node, Node *toInsert)
-{
-    if (node->next == NULL)
-    {
+void insert_at_next(LinkedList *list, Node *node, Node *toInsert) {
+    if (node->next == NULL) {
         insert_at_tail(list, node);
         return;
     }
@@ -59,10 +50,8 @@ void insert_at_next(LinkedList *list, Node *node, Node *toInsert)
     list->num++;
 }
 
-void insert_at_before(LinkedList *list, Node *node, Node *toInsert)
-{
-    if (node->prev == NULL)
-    {
+void insert_at_before(LinkedList *list, Node *node, Node *toInsert) {
+    if (node->prev == NULL) {
         insert_at_head(list, node);
         return;
     }
@@ -72,43 +61,34 @@ void insert_at_before(LinkedList *list, Node *node, Node *toInsert)
     list->num++;
 }
 
-void delete_node(LinkedList *list, Node *node)
-{
+void delete_node(LinkedList *list, Node *node) {
     free(node->content);
-    if (node->prev != NULL)
-    {
+    if (node->prev != NULL) {
         node->prev->next = node->next;
-    }
-    else {
+    } else {
         list->head = node->next;
     }
-    if (node->next != NULL)
-    {
+    if (node->next != NULL) {
         node->next->prev = node->prev;
-    }
-    else {
+    } else {
         list->tail = node->prev;
     }
     list->num--;
     free(node);
 }
 
-void print_list(LinkedList *list)
-{
+void print_list(LinkedList *list) {
     Node *node = list->head;
-    while (node != NULL)
-    {
+    while (node != NULL) {
         write(1, (char *)node->content, node->length);
         write(1, "\n", 1);
         node = node->next;
     }
 }
 
-void delete_all_node(LinkedList *list)
-{
+void delete_all_node(LinkedList *list) {
     Node *node = list->head;
-    while (node != NULL)
-    {
+    while (node != NULL) {
         delete_node(list, node);
         node = list->head;
     }
