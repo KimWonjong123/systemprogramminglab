@@ -5,11 +5,7 @@
 *.tar
 
 #executables, configs
-pa1/pa1
-week6/ex5
 week7/cron
-week7/ex6
-week8/w8
 week*/w*
 week*/ex*
 pa*/pa*
