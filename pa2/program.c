@@ -167,15 +167,35 @@ void cp(char *args[]) {
 }
 
 void mv(char *args[]) {
-    char src = args[1];
+    struct stat src_statbuf, dest_statbuf;
+
+    char *src = args[1];
     if (src == NULL) {
         printf("mv: missing file operand\n");
         return;
     }
-    char dest = args[2];
+
+    char *dest = args[2];
     if (dest == NULL) {
         printf("mv: missing destination file operand after '%s'\n", src);
         return;
+    }
+
+    stat(src, &src_statbuf);
+    stat(dest, &dest_statbuf);
+    if (S_ISREG(src_statbuf.st_mode) && S_ISDIR(dest_statbuf.st_mode)) {
+        if (src[0] == '.' || src[0] == '/') {  // parse file name
+            char *ptr = src;
+            while (*ptr != '\0') {
+                ptr++;
+            }
+            while (*ptr != '/') {
+                ptr--;
+            }
+            src = ptr + 1;
+        }
+        strcat(dest, "/");
+        strcat(dest, src);
     }
 
     if (rename(src, dest) == -1) {
