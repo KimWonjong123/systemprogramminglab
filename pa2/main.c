@@ -12,26 +12,17 @@
 
 #include "linkedList.h"
 
-char *REDIRECTIONS[] = {" < ", " > ", " << ", " >> "};
+char *REDIRECTIONS[] = {" < ", " > ", " >> "};
 char *EXECUTABLES[] = {"ls",
                        "man",
                        "grep",
                        "sort",
                        "awk",
                        "bc"
-                       "pwd",
-                       "head",
-                       "tail",
-                       "cat",
-                       "cp",
-                       "mv",
-                       "rm",
-                       "pwd",
-                       "cd",
-                       "exit"};
-char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm"};
+                       };
+char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm", "pwd", "cd", "exit"};
 
-bool parse_commands(char *cmd, LinkedList *commands) {
+bool parse_pipelines(char *cmd, LinkedList *commands) {
     bool daemon = false;
 
     // check daemon and remove '&' character
@@ -53,21 +44,29 @@ bool parse_commands(char *cmd, LinkedList *commands) {
     return daemon;
 }
 
-int parse_command(char *cmd, char *args[]) {
+int parse_command(char *cmd, Command *command, char **redirect_in, char **redirect_out, char **redirect_out_append) {
     int cnt = 0;
     char *pos = cmd;
-    char *filename1 = NULL, *filename2 = NULL;
     char *command_end = NULL;
+    char **args = command->args;
 
     // parse filename
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         int len = strlen(REDIRECTIONS[i]);
         char *pos_save = pos;
         if ((pos = strstr(pos, REDIRECTIONS[i]))) {
-            if (filename1 == NULL) {
-                filename1 = pos + len;
-            } else if (filename1 != NULL) {
-                filename2 = pos + len;
+            switch (i) {
+                case 0:
+                    *redirect_in = *redirect_in == NULL ? pos + len : NULL;
+                    break;
+                case 1:
+                    *redirect_out = *redirect_out == NULL && *redirect_out_append == NULL ? pos + len : NULL;
+                    break;
+                case 2:
+                    *redirect_out_append  = *redirect_out == NULL && *redirect_out_append == NULL ? pos + len : NULL;
+                    break;
+                default:
+                    break;
             }
             *pos++ = '\0';
             command_end = command_end == NULL ? pos : command_end;
@@ -79,7 +78,7 @@ int parse_command(char *cmd, char *args[]) {
     }
 
     // parse arguments
-    *command_end = '\0';
+    if (command_end != NULL) *command_end = '\0';
     pos = cmd;
     char *next;
     char *ptr = strtok_r(pos, " ", &next);
@@ -87,8 +86,6 @@ int parse_command(char *cmd, char *args[]) {
         args[cnt++] = ptr;
         ptr = strtok_r(NULL, " ", &next);
     }
-    args[cnt++] = filename1;
-    args[cnt++] = filename2;
 
     return cnt;
 }
@@ -96,12 +93,13 @@ int parse_command(char *cmd, char *args[]) {
 int main() {
     size_t size;
     char *cmd;
-    bool bDaemon;
-    LinkedList tokens = {0, NULL, NULL};
-    LinkedList commands = {0, NULL, NULL};
+    bool b_daemon;
+    LinkedList pipelines = {0, NULL, NULL};
+    Command *pCommands;
 
     while (1) {
         cmd = NULL;
+        char *redirect_in = NULL, *redirect_out = NULL, *redirect_out_append = NULL;
 
         if (getline(&cmd, &size, stdin) == -1) {
             perror("getline error");
@@ -114,18 +112,29 @@ int main() {
             exit(0);
         }
 
-        // bDaemon = parse_commands(cmd, &commands);
+        b_daemon = parse_pipelines(cmd, &pipelines);
 
-        char *args[201];
-        int cnt = parse_command(cmd, args);
+        pCommands = (Command *)malloc(sizeof(Command) * pipelines.num);
 
-        for (int i = 0; i < cnt; i++) {
-            printf("%s\n", args[i] != NULL ? args[i] : "NULL");
+        Node *node = pipelines.head;
+        for (int i = 0; i < pipelines.num; i++, node = node->next) {
+            pCommands[i].arg_num = parse_command(node->content, &pCommands[i], &redirect_in, &redirect_out, &redirect_out_append);
         }
 
-        delete_all_node(&tokens);
-        delete_all_node(&commands);
+        for (int i = 0; i < pipelines.num; i++) {
+            char **arg = pCommands[i].args;
+            for (int j = 0; j < pCommands[i].arg_num; j++) {
+                printf("%s ", arg[j]);
+            }
+            if (redirect_in != NULL) printf("< %s ", redirect_in);
+            if (redirect_out != NULL) printf("> %s ", redirect_out);
+            if (redirect_out_append != NULL) printf(">> %s ", redirect_out_append);
+            printf("\n");
+        }
+
+        delete_all_node(&pipelines);
         free(cmd);
+        free(pCommands);
     }
 
     free(cmd);

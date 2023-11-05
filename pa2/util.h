@@ -8,8 +8,15 @@ typedef enum __type
     COMMANDS,
     COMMAND,
     EXECUTABLE,
-    BUILTIN,
+    IMPLEMENT,
     PATH
 } TYPE;
+
+typedef struct _command
+{
+    TYPE type;
+    char *args[200];
+    int arg_num;
+} Command;
 
 #endif
