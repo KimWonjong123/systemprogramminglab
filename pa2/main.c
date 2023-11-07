@@ -154,141 +154,132 @@ int main() {
             pCommands[i].arg_num = parse_command(node->content, &pCommands[i], &redirect_in, &redirect_out, &redirect_out_append);
         }
 
-        Command __cmd = pCommands[0];
         bool b_notfound = false;
-        for (int i = 0; i < pipelines.num; i++, __cmd = pCommands[i]) {
-            if (__cmd.type == UNKNOWN) {
-                b_notfound = true;
-                break;
-            }
-        }
+        // for (int i = 0; i < pipelines.num; i++) {
+        //     Command __cmd = pCommands[i];
+        //     if (__cmd.type == UNKNOWN) {
+        //         b_notfound = true;
+        //         break;
+        //     }
+        // }
         if (b_notfound) {
             printf("mini: command not found\n");
-            continue;
         }
+        else {
+            pid_t pid;
+            pid_t pgid = -1;
+            int fd1[2] = {-1, -1};
+            int fd2[2] = {-1, -1};
 
-        pid_t pid;
-        pid_t pgid = -1;
-        int fd1[2] = {-1, -1};
-        int fd2[2] = {-1, -1};
-
-        // TODO: fix pipelining
-        for (int i = 0; i < pipelines.num; i++) {
-            stdin_copy = dup(STDIN_FILENO);
-            stdout_copy = dup(STDOUT_FILENO);
-
-            // set pipe
-            if (i % 2) {
-                pipe(fd2);
-            }
-            else {
-                pipe(fd1);
-            }
-
-            if((pid = fork()) == 0)
-            {
-                // set pgid to pid of first child
-                if (i == 0) pgid = getpgid(getpid());
-                setpgid(getpid(), pgid);
+            // TODO: fix pipelining
+            for (int i = 0; i < pipelines.num; i++) {
+                stdin_copy = dup(STDIN_FILENO);
+                stdout_copy = dup(STDOUT_FILENO);
 
                 // set pipe
-                if (i != 0) {
-                    if (i % 2) {
-                        dup2(fd1[0], STDIN_FILENO);
-                        close(fd1[0]);
-                    }
-                    else {
-                        dup2(fd2[0], STDIN_FILENO);
-                        close(fd2[0]);
-                    }
-                }
-                if (pipelines.num != 1 && i != pipelines.num - 1) {
-                    if (i % 2) {
-                        dup2(fd2[1], STDOUT_FILENO);
-                        close(fd2[1]);
-                    }
-                    else {
-                        dup2(fd1[1], STDOUT_FILENO);
-                        close(fd1[1]);
-                    }
+                if (i % 2) {
+                    pipe(fd2);
+                } else {
+                    pipe(fd1);
                 }
 
-                // set redirection
-                int fdr;
-                if (i == 0) {
-                    if (redirect_in != NULL) {
-                        fdr = open(redirect_in, O_RDONLY);
-                        if (fdr == -1) {
-                            perror("redirect in error");
-                            exit(1);
+                if ((pid = fork()) == 0) {
+                    // set pipe
+                    if (i != 0) {
+                        if (i % 2) {
+                            dup2(fd1[0], STDIN_FILENO);
+                            close(fd1[0]);
+                        } else {
+                            dup2(fd2[0], STDIN_FILENO);
+                            close(fd2[0]);
                         }
-                        dup2(fdr, STDIN_FILENO);
-                        close(fdr);
+                    }
+                    if (pipelines.num != 1 && i != pipelines.num - 1) {
+                        if (i % 2) {
+                            dup2(fd2[1], STDOUT_FILENO);
+                            close(fd2[1]);
+                        } else {
+                            dup2(fd1[1], STDOUT_FILENO);
+                            close(fd1[1]);
+                        }
+                    }
+
+                    // set redirection
+                    int fdr;
+                    if (i == 0) {
+                        if (redirect_in != NULL) {
+                            fdr = open(redirect_in, O_RDONLY);
+                            if (fdr == -1) {
+                                perror("redirect in error");
+                                exit(1);
+                            }
+                            dup2(fdr, STDIN_FILENO);
+                            close(fdr);
+                        }
+                    }
+                    if (i == pipelines.num - 1) {
+                        if (redirect_out != NULL) {
+                            fdr = open(redirect_out, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                            if (fdr == -1) {
+                                perror("redirect out error");
+                                exit(1);
+                            }
+                            dup2(fdr, STDOUT_FILENO);
+                            close(fdr);
+                        } else if (redirect_out_append != NULL) {
+                            fdr = open(redirect_out_append, O_WRONLY | O_CREAT | O_APPEND, 0644);
+                            if (fdr == -1) {
+                                perror("redirect out append error");
+                                exit(1);
+                            }
+                            dup2(fdr, STDOUT_FILENO);
+                            close(fdr);
+                        }
+                    }
+
+                    // execute command
+                    char *path = (char *)malloc(sizeof(char) * 200);
+                    sprintf(path, "/bin/%s", pCommands[i].args[0]);
+                    execv(path, pCommands[i].args);
+                    free(path);
+                    exit(1);
+                } else {
+                    // set pgid to pid of first child
+                    if (i == 0) pgid = pid;
+                    setpgid(pid, pgid);
+
+                    while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
+                        ;
+                    }
+                    dup2(stdin_copy, STDIN_FILENO);
+                    dup2(stdout_copy, STDOUT_FILENO);
+
+                    // set pipe
+                    if (i != 0) {
+                        if (i % 2) {
+                            close(fd1[0]);
+                        } else {
+                            close(fd2[0]);
+                        }
+                    }
+                    if (pipelines.num != 1 && i != pipelines.num - 1) {
+                        if (i % 2) {
+                            close(fd2[1]);
+                        } else {
+                            close(fd1[1]);
+                        }
                     }
                 }
-                if (i == pipelines.num - 1) {
-                    if (redirect_out != NULL) {
-                        fdr = open(redirect_out, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                        if (fdr == -1) {
-                            perror("redirect out error");
-                            exit(1);
-                        }
-                        dup2(fdr, STDOUT_FILENO);
-                        close(fdr);
-                    }
-                    else if (redirect_out_append != NULL) {
-                        fdr = open(redirect_out_append, O_WRONLY | O_CREAT | O_APPEND, 0644);
-                        if (fdr == -1) {
-                            perror("redirect out append error");
-                            exit(1);
-                        }
-                        dup2(fdr, STDOUT_FILENO);
-                        close(fdr);
-                    }
-                }
-
-
-                // execute command
-                char *path = (char *)malloc(sizeof(char) * 200);
-                sprintf(path, "/bin/%s", pCommands[i].args[0]);
-                execv(path, pCommands[i].args);
-                free(path);
-                exit(1);
             }
-            else
-            {
-                while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
-                    ;
-                }
-                dup2(stdin_copy, STDIN_FILENO);
-                dup2(stdout_copy, STDOUT_FILENO);
 
-                // set pipe
-                if (i != 0) {
-                    if (i % 2) {
-                        close(fd1[0]);
-                    }
-                    else {
-                        close(fd2[0]);
-                    }
-                }
-                if (pipelines.num != 1 && i != pipelines.num - 1) {
-                    if (i % 2) {
-                        close(fd2[1]);
-                    } else {
-                        close(fd1[1]);
-                    }
-                }
-            }
+            // close pipe and reset stdin, stdout
+            close(fd1[0]);
+            close(fd1[1]);
+            close(fd2[0]);
+            close(fd2[1]);
+            dup2(stdin_copy, STDIN_FILENO);
+            dup2(stdout_copy, STDOUT_FILENO);
         }
-
-        // close pipe and reset stdin, stdout
-        close(fd1[0]);
-        close(fd1[1]);
-        close(fd2[0]);
-        close(fd2[1]);
-        dup2(stdin_copy, STDIN_FILENO);
-        dup2(stdout_copy, STDOUT_FILENO);
 
         delete_all_node(&pipelines);
         free(cmd);
