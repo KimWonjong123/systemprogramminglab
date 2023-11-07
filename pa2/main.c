@@ -51,13 +51,25 @@ int parse_command(char *cmd, Command *command, char **redirect_in, char **redire
         if ((pos = strstr(pos, REDIRECTIONS[i]))) {
             switch (i) {
                 case 0:
-                    *redirect_in = *redirect_in == NULL ? pos + len : NULL;
+                    if (*redirect_in == NULL) {
+                        *redirect_in = pos + len;
+                        if ((*redirect_in)[strlen(*redirect_in) - 1] == ' ')
+                            (*redirect_in)[strlen(*redirect_in) - 1] = '\0';
+                    }
                     break;
                 case 1:
-                    *redirect_out = *redirect_out == NULL && *redirect_out_append == NULL ? pos + len : NULL;
+                    if (*redirect_out == NULL) {
+                        *redirect_out = pos + len;
+                        if ((*redirect_out)[strlen(*redirect_out) - 1] == ' ')
+                            (*redirect_out)[strlen(*redirect_out) - 1] = '\0';
+                    }
                     break;
                 case 2:
-                    *redirect_out_append  = *redirect_out == NULL && *redirect_out_append == NULL ? pos + len : NULL;
+                    if (*redirect_out_append == NULL) {
+                        *redirect_out_append = pos + len;
+                        if ((*redirect_out_append)[strlen(*redirect_out_append) - 1] == ' ')
+                            (*redirect_out_append)[strlen(*redirect_out_append) - 1] = '\0';
+                    }
                     break;
                 default:
                     break;
@@ -134,19 +146,20 @@ int main() {
 
         pid_t pid;
         pid_t pgid = -1;
-        int fd1[2] = {0, 0};
-        int fd2[2] = {0, 0};
+        int fd1[2] = {-1, -1};
+        int fd2[2] = {-1, -1};
 
         // TODO: fix pipelining
         for (int i = 0; i < pipelines.num; i++) {
+            stdin_copy = dup(STDIN_FILENO);
+            stdout_copy = dup(STDOUT_FILENO);
+
             // set pipe
-            if (fd1[0] == 0) {
-                pipe(fd1);
-                printf("pipe: %d %d\n", fd1[0], fd1[1]);
-            }
-            else if (fd2[0] == 0) {
+            if (i % 2) {
                 pipe(fd2);
-                printf("pipe: %d %d\n", fd2[0], fd2[1]);
+            }
+            else {
+                pipe(fd1);
             }
 
             if((pid = fork()) == 0)
@@ -157,23 +170,23 @@ int main() {
 
                 // set pipe
                 if (i != 0) {
-                    if (fd1[0] != 0) {
+                    if (i % 2) {
                         dup2(fd1[0], STDIN_FILENO);
                         close(fd1[0]);
                     }
-                    if (fd2[0] != 0) {
+                    else {
                         dup2(fd2[0], STDIN_FILENO);
                         close(fd2[0]);
                     }
                 }
                 if (pipelines.num != 1 && i != pipelines.num - 1) {
-                    if (fd1[1] != 0) {
-                        dup2(fd1[1], STDOUT_FILENO);
-                        close(fd1[1]);
-                    }
-                    if (fd2[1] != 0) {
+                    if (i % 2) {
                         dup2(fd2[1], STDOUT_FILENO);
                         close(fd2[1]);
+                    }
+                    else {
+                        dup2(fd1[1], STDOUT_FILENO);
+                        close(fd1[1]);
                     }
                 }
 
@@ -181,10 +194,9 @@ int main() {
                 int fdr;
                 if (i == 0) {
                     if (redirect_in != NULL) {
-                        printf("redirect_in: %s\n", redirect_in);
                         fdr = open(redirect_in, O_RDONLY);
                         if (fdr == -1) {
-                            perror("open error");
+                            perror("redirect in error");
                             exit(1);
                         }
                         dup2(fdr, STDIN_FILENO);
@@ -193,20 +205,18 @@ int main() {
                 }
                 if (i == pipelines.num - 1) {
                     if (redirect_out != NULL) {
-                        printf("redirect_out: %s\n", redirect_out);
                         fdr = open(redirect_out, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                         if (fdr == -1) {
-                            perror("open error");
+                            perror("redirect out error");
                             exit(1);
                         }
                         dup2(fdr, STDOUT_FILENO);
                         close(fdr);
                     }
                     else if (redirect_out_append != NULL) {
-                        printf("redirect_out_append: %s\n", redirect_out_append);
                         fdr = open(redirect_out_append, O_WRONLY | O_CREAT | O_APPEND, 0644);
                         if (fdr == -1) {
-                            perror("open error");
+                            perror("redirect out append error");
                             exit(1);
                         }
                         dup2(fdr, STDOUT_FILENO);
@@ -218,55 +228,44 @@ int main() {
                 // execute command
                 char *path = (char *)malloc(sizeof(char) * 200);
                 sprintf(path, "/bin/%s", pCommands[i].args[0]);
-                printf("executing %s...\n", path);
                 execv(path, pCommands[i].args);
                 free(path);
                 exit(1);
             }
             else
             {
+                while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
+                    ;
+                }
+                dup2(stdin_copy, STDIN_FILENO);
+                dup2(stdout_copy, STDOUT_FILENO);
+
                 // set pipe
                 if (i != 0) {
-                    if (fd1[0] != 0) {
+                    if (i % 2) {
                         close(fd1[0]);
                     }
-                    if (fd2[0] != 0) {
+                    else {
                         close(fd2[0]);
                     }
                 }
                 if (pipelines.num != 1 && i != pipelines.num - 1) {
-                    if (fd1[1] != 0) {
+                    if (i % 2) {
+                        close(fd2[1]);
+                    } else {
                         close(fd1[1]);
                     }
-                    if (fd2[1] != 0) {
-                        close(fd2[1]);
-                    }
                 }
-
-                waitpid(-1, &status, WNOHANG | WUNTRACED);
-                dup2(stdin_copy, STDIN_FILENO);
-                dup2(stdout_copy, STDOUT_FILENO);
             }
         }
 
         // close pipe and reset stdin, stdout
-        // close(fd1[0]);
-        // close(fd1[1]);
-        // close(fd2[0]);
-        // close(fd2[1]);
-        // dup2(stdin_copy, STDIN_FILENO);
-        // dup2(stdout_copy, STDOUT_FILENO);
-
-        // for (int i = 0; i < pipelines.num; i++) {
-        //     char **arg = pCommands[i].args;
-        //     for (int j = 0; j < pCommands[i].arg_num; j++) {
-        //         printf("%s ", arg[j]);
-        //     }
-        //     if (redirect_in != NULL) printf("< %s ", redirect_in);
-        //     if (redirect_out != NULL) printf("> %s ", redirect_out);
-        //     if (redirect_out_append != NULL) printf(">> %s ", redirect_out_append);
-        //     printf("\n");
-        // }
+        close(fd1[0]);
+        close(fd1[1]);
+        close(fd2[0]);
+        close(fd2[1]);
+        dup2(stdin_copy, STDIN_FILENO);
+        dup2(stdout_copy, STDOUT_FILENO);
 
         delete_all_node(&pipelines);
         free(cmd);
