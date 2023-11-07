@@ -155,13 +155,13 @@ int main() {
         }
 
         bool b_notfound = false;
-        // for (int i = 0; i < pipelines.num; i++) {
-        //     Command __cmd = pCommands[i];
-        //     if (__cmd.type == UNKNOWN) {
-        //         b_notfound = true;
-        //         break;
-        //     }
-        // }
+        for (int i = 0; i < pipelines.num; i++) {
+            Command __cmd = pCommands[i];
+            if (__cmd.type == UNKNOWN) {
+                b_notfound = true;
+                break;
+            }
+        }
         if (b_notfound) {
             printf("mini: command not found\n");
         }
@@ -239,10 +239,18 @@ int main() {
 
                     // execute command
                     char *path = (char *)malloc(sizeof(char) * 200);
+                    if (!strcmp(pCommands[i].args[0], "tail")) {
+                        sprintf(path, "./tail");
+                        execv(path, pCommands[i].args);
+                        free(path);
+                        exit(1);
+                    }
+                    else {
                     sprintf(path, "/bin/%s", pCommands[i].args[0]);
                     execv(path, pCommands[i].args);
                     free(path);
                     exit(1);
+                    }
                 } else {
                     // set pgid to pid of first child
                     if (i == 0) pgid = pid;
