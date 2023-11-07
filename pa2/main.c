@@ -15,6 +15,7 @@
 char *REDIRECTIONS[] = {" < ", " > ", " >> "};
 char *EXECUTABLES[] = {"ls", "man", "grep", "sort", "awk", "bc"};
 char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm", "pwd", "cd", "exit"};
+char *BUILTINS[] = {"cd", "exit"};
 
 bool parse_pipelines(char *cmd, LinkedList *commands) {
     bool daemon = false;
@@ -97,16 +98,25 @@ int parse_command(char *cmd, Command *command, char **redirect_in, char **redire
     for(int i = 0; i < 6; i++) {
         if (!strcmp(args[0], EXECUTABLES[i])) {
             command->type = EXECUTABLE;
-            break;
+            return cnt;
         }
     }
     for (int i = 0; i < 9; i++) {
         if (!strcmp(args[0], IMPLEMENTED[i])) {
             command->type = IMPLEMENT;
-            break;
+            return cnt;
         }
     }
-
+    for (int i = 0; i < 2; i++) {
+        if (!strcmp(args[0], BUILTINS[i])) {
+            command->type = BUILTIN;
+            return cnt;
+        }
+    }
+    if (args[0][0] == '.')
+        command->type = PATH;
+    else 
+        command->type = UNKNOWN;
     return cnt;
 }
 
@@ -142,6 +152,19 @@ int main() {
         Node *node = pipelines.head;
         for (int i = 0; i < pipelines.num; i++, node = node->next) {
             pCommands[i].arg_num = parse_command(node->content, &pCommands[i], &redirect_in, &redirect_out, &redirect_out_append);
+        }
+
+        Command __cmd = pCommands[0];
+        bool b_notfound = false;
+        for (int i = 0; i < pipelines.num; i++, __cmd = pCommands[i]) {
+            if (__cmd.type == UNKNOWN) {
+                b_notfound = true;
+                break;
+            }
+        }
+        if (b_notfound) {
+            printf("mini: command not found\n");
+            continue;
         }
 
         pid_t pid;

@@ -9,7 +9,9 @@ typedef enum __type
     COMMAND,
     EXECUTABLE,
     IMPLEMENT,
-    PATH
+    BUILTIN,
+    PATH,
+    UNKNOWN
 } TYPE;
 
 typedef struct _command
