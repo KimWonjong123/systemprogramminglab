@@ -17,6 +17,8 @@ char *EXECUTABLES[] = {"ls", "man", "grep", "sort", "awk", "bc"};
 char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm", "pwd"};
 char *BUILTINS[] = {"cd", "exit"};
 
+char DIRECTORY[4096];
+
 bool parse_pipelines(char *cmd, LinkedList *commands) {
     bool daemon = false;
 
@@ -120,7 +122,20 @@ int parse_command(char *cmd, Command *command, char **redirect_in, char **redire
     return cnt;
 }
 
-int main() {
+void init_dir(char *arg) {
+    char *dir = NULL;
+    strncpy(DIRECTORY, arg, strlen(arg));
+    char *pos = DIRECTORY + strlen(DIRECTORY) - 1;
+    while (*pos != '/') {
+        *pos = '\0';
+        pos--;
+    }
+    dir = realpath(DIRECTORY, NULL);
+    strncpy(DIRECTORY, dir, strlen(dir));
+    free(dir);
+}
+
+int main(int argc, char **argv) {
     size_t size;
     char *cmd;
     bool b_daemon;
@@ -129,6 +144,9 @@ int main() {
     int status;
     int stdin_copy = dup(STDIN_FILENO);
     int stdout_copy = dup(STDOUT_FILENO);
+
+    // set directory
+    init_dir(argv[0]);
 
     while (1) {
         cmd = NULL;
@@ -237,9 +255,10 @@ int main() {
                     }
 
                     // execute command
-                    char *path = (char *)malloc(sizeof(char) * 200);
+                    // TODO: fix head and tail
+                    char *path = (char *)malloc(sizeof(char) * 4096);
                     if (pCommands[i].type == IMPLEMENT) {
-                        sprintf(path, "./%s", pCommands[i].args[0]);
+                        sprintf(path, "%s/%s", DIRECTORY, pCommands[i].args[0]);
                         execv(path, pCommands[i].args);
                         free(path);
                         exit(1);
