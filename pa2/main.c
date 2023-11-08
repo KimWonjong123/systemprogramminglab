@@ -14,7 +14,7 @@
 
 char *REDIRECTIONS[] = {" < ", " > ", " >> "};
 char *EXECUTABLES[] = {"ls", "man", "grep", "sort", "awk", "bc"};
-char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm", "pwd", "cd", "exit"};
+char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm", "pwd"};
 char *BUILTINS[] = {"cd", "exit"};
 
 bool parse_pipelines(char *cmd, LinkedList *commands) {
@@ -171,7 +171,6 @@ int main() {
             int fd1[2] = {-1, -1};
             int fd2[2] = {-1, -1};
 
-            // TODO: fix pipelining
             for (int i = 0; i < pipelines.num; i++) {
                 stdin_copy = dup(STDIN_FILENO);
                 stdout_copy = dup(STDOUT_FILENO);
@@ -239,8 +238,8 @@ int main() {
 
                     // execute command
                     char *path = (char *)malloc(sizeof(char) * 200);
-                    if (!strcmp(pCommands[i].args[0], "tail")) {
-                        sprintf(path, "./tail");
+                    if (pCommands[i].type == IMPLEMENT) {
+                        sprintf(path, "./%s", pCommands[i].args[0]);
                         execv(path, pCommands[i].args);
                         free(path);
                         exit(1);
@@ -256,6 +255,7 @@ int main() {
                     if (i == 0) pgid = pid;
                     setpgid(pid, pgid);
 
+                    // wait for child process
                     while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
                         ;
                     }

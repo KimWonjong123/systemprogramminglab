@@ -2,6 +2,7 @@
 #include <fcntl.h>
 #include "err.h"
 #include <stdlib.h>
+#include <errno.h>
 
 int main(int argc, char **argv) {
     int cnt = 0, line = 10;
@@ -43,7 +44,8 @@ int main(int argc, char **argv) {
         }
         write(STDOUT_FILENO, buf, sizeof(buf));
     }
-    close(fd);
+    if (fd != STDIN_FILENO)
+        close(fd);
 
     return 0;
 }

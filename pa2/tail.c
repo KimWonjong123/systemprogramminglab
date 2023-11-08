@@ -1,7 +1,6 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include "err.h"
 
@@ -58,6 +57,9 @@ int main(int argc, char **argv) {
     while (read(fd, buf, sizeof(buf)) > 0) {
         write(STDOUT_FILENO, buf, sizeof(buf));
     }
+
+    if (fd != STDIN_FILENO)
+        close(fd);
 
     return 0;
 }
