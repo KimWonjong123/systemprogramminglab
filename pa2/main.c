@@ -16,8 +16,19 @@ char *REDIRECTIONS[] = {" < ", " > ", " >> "};
 char *EXECUTABLES[] = {"ls", "man", "grep", "sort", "awk", "bc"};
 char *IMPLEMENTED[] = {"head", "tail", "cat", "cp", "mv", "rm", "pwd"};
 char *BUILTINS[] = {"cd", "exit"};
-
 char DIRECTORY[4096];
+
+int status;
+
+void sigchld_handler(int sig) {
+    while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
+        ;
+    }
+}
+
+void sigstp_handler(int sig) { ; }
+
+void sigint_handler(int sig) { ; }
 
 bool parse_pipelines(char *cmd, LinkedList *commands) {
     bool daemon = false;
@@ -103,7 +114,7 @@ int parse_command(char *cmd, Command *command, char **redirect_in, char **redire
             return cnt;
         }
     }
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < 7; i++) {
         if (!strcmp(args[0], IMPLEMENTED[i])) {
             command->type = IMPLEMENT;
             return cnt;
@@ -137,31 +148,35 @@ void init_dir(char *arg) {
 
 int main(int argc, char **argv) {
     size_t size;
-    char *cmd;
+    char *cmd = NULL;
     bool b_daemon;
     LinkedList pipelines = {0, NULL, NULL};
     Command *pCommands;
-    int status;
     int stdin_copy = dup(STDIN_FILENO);
     int stdout_copy = dup(STDOUT_FILENO);
 
     // set directory
     init_dir(argv[0]);
 
+    signal(SIGCHLD, sigchld_handler);
+    signal(SIGTSTP, sigstp_handler);
+    signal(SIGINT, sigint_handler);
+
     while (1) {
         cmd = NULL;
         char *redirect_in = NULL, *redirect_out = NULL, *redirect_out_append = NULL;
+        int n_read;
 
-        if (getline(&cmd, &size, stdin) == -1) {
+        if ((n_read = getline(&cmd, &size, stdin)) == -1) {
             perror("getline error");
             exit(1);
         }
-        cmd[strlen(cmd) - 1] = '\0';
-
-        if (!strcmp(cmd, "exit")) {
-            printf("exiting minishell...\n");
-            exit(0);
+        if (n_read <= 1) {
+            if (cmd != NULL)
+                free(cmd);
+            continue;
         }
+        cmd[strlen(cmd) - 1] = '\0';
 
         b_daemon = parse_pipelines(cmd, &pipelines);
 
@@ -170,6 +185,25 @@ int main(int argc, char **argv) {
         Node *node = pipelines.head;
         for (int i = 0; i < pipelines.num; i++, node = node->next) {
             pCommands[i].arg_num = parse_command(node->content, &pCommands[i], &redirect_in, &redirect_out, &redirect_out_append);
+        }
+
+        if (!strcmp(pCommands[0].args[0], "exit")) {
+            int status_code = pCommands[0].args[1] != NULL ? (int)strtol(pCommands[0].args[1], NULL, 10) : 0;
+            delete_all_node(&pipelines);
+            free(cmd);
+            free(pCommands);
+            exit(status_code);
+        }
+        if (!strcmp(pCommands[0].args[0], "cd")) {
+            if (pCommands[0].args[1] == NULL) {
+                chdir(getenv("HOME"));
+            } else {
+                chdir(pCommands[0].args[1]);
+            }
+            delete_all_node(&pipelines);
+            free(cmd);
+            free(pCommands);
+            continue;
         }
 
         bool b_notfound = false;
@@ -257,27 +291,49 @@ int main(int argc, char **argv) {
                     // execute command
                     // TODO: fix head and tail
                     char *path = (char *)malloc(sizeof(char) * 4096);
-                    if (pCommands[i].type == IMPLEMENT) {
-                        sprintf(path, "%s/%s", DIRECTORY, pCommands[i].args[0]);
-                        execv(path, pCommands[i].args);
-                        free(path);
-                        exit(1);
+                    switch (pCommands[i].type) {
+                        case IMPLEMENT:
+                            sprintf(path, "%s/%s", DIRECTORY, pCommands[i].args[0]);
+                            execv(path, pCommands[i].args);
+                            break;
+                        case EXECUTABLE:
+                            sprintf(path, "/bin/%s", pCommands[i].args[0]);
+                            execv(path, pCommands[i].args);
+                            break;
+                        case BUILTIN:
+                            break;
+                        case PATH:
+                            sprintf(path, "%s", pCommands[i].args[0]);
+                            execv(path, pCommands[i].args);
+                            break;
+                        case UNKNOWN:
+                        default:
+                            printf("mini: command not found\n");
+                            break;
                     }
-                    else {
-                    sprintf(path, "/bin/%s", pCommands[i].args[0]);
-                    execv(path, pCommands[i].args);
                     free(path);
                     exit(1);
-                    }
+                    // if (pCommands[i].type == IMPLEMENT) {
+                    //     sprintf(path, "%s/%s", DIRECTORY, pCommands[i].args[0]);
+                    //     execv(path, pCommands[i].args);
+                    //     free(path);
+                    //     exit(1);
+                    // } else {
+                    //     sprintf(path, "/bin/%s", pCommands[i].args[0]);
+                    //     execv(path, pCommands[i].args);
+                    //     free(path);
+                    //     exit(1);
+                    // }
                 } else {
                     // set pgid to pid of first child
                     if (i == 0) pgid = pid;
                     setpgid(pid, pgid);
 
                     // wait for child process
-                    while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
-                        ;
-                    }
+                    waitpid(pid, &status, WUNTRACED);
+                    // while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
+                    //     ;
+                    // }
                     dup2(stdin_copy, STDIN_FILENO);
                     dup2(stdout_copy, STDOUT_FILENO);
 
