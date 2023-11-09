@@ -19,16 +19,26 @@ char *BUILTINS[] = {"cd", "exit"};
 char DIRECTORY[4096];
 
 int status;
+pid_t pid;
+pid_t pgid;
 
 void sigchld_handler(int sig) {
-    while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
-        ;
+    if(WIFSTOPPED(status)) {
+        kill(pid, SIGKILL);
+        fflush(stdout);
+        while(waitpid(pid, &status, WNOHANG| WUNTRACED) > 0);
     }
 }
 
-void sigstp_handler(int sig) { ; }
+void sigstp_handler(int sig) { 
+    printf("\33[2K\r(interrupt) enter exit to quit.\nmini$ ");
+    fflush(stdout);
+}
 
-void sigint_handler(int sig) { ; }
+void sigint_handler(int sig) {
+    printf("\33[2K\r(interrupt) enter exit to quit.\nmini$ ");
+    fflush(stdout);
+}
 
 bool parse_pipelines(char *cmd, LinkedList *commands) {
     bool daemon = false;
@@ -158,11 +168,13 @@ int main(int argc, char **argv) {
     // set directory
     init_dir(argv[0]);
 
+    signal(SIGTTOU, SIG_IGN);
     signal(SIGCHLD, sigchld_handler);
     signal(SIGTSTP, sigstp_handler);
     signal(SIGINT, sigint_handler);
 
     while (1) {
+        printf("\33[2K\rmini$ ");
         cmd = NULL;
         char *redirect_in = NULL, *redirect_out = NULL, *redirect_out_append = NULL;
         int n_read;
@@ -218,8 +230,6 @@ int main(int argc, char **argv) {
             printf("mini: command not found\n");
         }
         else {
-            pid_t pid;
-            pid_t pgid = -1;
             int fd1[2] = {-1, -1};
             int fd2[2] = {-1, -1};
 
@@ -313,27 +323,15 @@ int main(int argc, char **argv) {
                     }
                     free(path);
                     exit(1);
-                    // if (pCommands[i].type == IMPLEMENT) {
-                    //     sprintf(path, "%s/%s", DIRECTORY, pCommands[i].args[0]);
-                    //     execv(path, pCommands[i].args);
-                    //     free(path);
-                    //     exit(1);
-                    // } else {
-                    //     sprintf(path, "/bin/%s", pCommands[i].args[0]);
-                    //     execv(path, pCommands[i].args);
-                    //     free(path);
-                    //     exit(1);
-                    // }
                 } else {
                     // set pgid to pid of first child
                     if (i == 0) pgid = pid;
                     setpgid(pid, pgid);
+                    tcsetpgrp(STDIN_FILENO, pgid);
 
                     // wait for child process
                     waitpid(pid, &status, WUNTRACED);
-                    // while (waitpid(-1, &status, WNOHANG | WUNTRACED) > 0) {
-                    //     ;
-                    // }
+                    tcsetpgrp(STDIN_FILENO, getpgid(0));
                     dup2(stdin_copy, STDIN_FILENO);
                     dup2(stdout_copy, STDOUT_FILENO);
 
