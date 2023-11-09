@@ -327,11 +327,17 @@ int main(int argc, char **argv) {
                     // set pgid to pid of first child
                     if (i == 0) pgid = pid;
                     setpgid(pid, pgid);
+
+                    // bring child process to foreground
                     tcsetpgrp(STDIN_FILENO, pgid);
 
                     // wait for child process
                     waitpid(pid, &status, WUNTRACED);
+
+                    // bring mini shell back to foreground 
                     tcsetpgrp(STDIN_FILENO, getpgid(0));
+
+                    // bring back stdin, stdout
                     dup2(stdin_copy, STDIN_FILENO);
                     dup2(stdout_copy, STDOUT_FILENO);
 
