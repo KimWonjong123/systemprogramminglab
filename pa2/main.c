@@ -40,12 +40,10 @@ void sigint_handler(int sig) {
     fflush(stdout);
 }
 
-bool parse_pipelines(char *cmd, LinkedList *commands) {
-    bool daemon = false;
+void parse_pipelines(char *cmd, LinkedList *commands) {
 
     // check daemon and remove '&' character
     if (cmd[strlen(cmd) - 1] == '&' && cmd[strlen(cmd) - 2] == ' ') {
-        daemon = true;
         cmd[strlen(cmd) - 2] = '\0';
     }
 
@@ -58,8 +56,6 @@ bool parse_pipelines(char *cmd, LinkedList *commands) {
         pos = strtok_r(NULL, "|", &next);
         insert_at_tail(commands, node);
     }
-
-    return daemon;
 }
 
 int parse_command(char *cmd, Command *command, char **redirect_in, char **redirect_out, char **redirect_out_append) {
@@ -159,7 +155,6 @@ void init_dir(char *arg) {
 int main(int argc, char **argv) {
     size_t size;
     char *cmd = NULL;
-    bool b_daemon;
     LinkedList pipelines = {0, NULL, NULL};
     Command *pCommands;
     int stdin_copy = dup(STDIN_FILENO);
@@ -190,7 +185,7 @@ int main(int argc, char **argv) {
         }
         cmd[strlen(cmd) - 1] = '\0';
 
-        b_daemon = parse_pipelines(cmd, &pipelines);
+        parse_pipelines(cmd, &pipelines);
 
         pCommands = (Command *)malloc(sizeof(Command) * pipelines.num);
 

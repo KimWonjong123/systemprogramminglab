@@ -1,7 +1,7 @@
 # Makefile
 TARGET=pa2
 CC=gcc
-CFLAGS=-Wall -g -O0 -fsanitize=address
+CFLAGS=-Wall
 SRCS=main.c linkedList.c
 BINS=head tail cat cp mv rm pwd
 
