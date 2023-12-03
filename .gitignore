@@ -9,3 +9,4 @@ week7/cron
 week*/w*
 week*/ex*
 pa*/pa*
+!pa*/pa*.c
