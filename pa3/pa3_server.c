@@ -46,7 +46,7 @@ bool login(int client_id, int pw, int *socket)
       is_logged_in(client_id, socket) ||
       client_id < 0 ||
       client_id >= MAX_CLIENT ||
-      (session[client_id] != 0 && session[client_id] != *socket))
+      (session[client_id] != 0 && session[client_id] != *socket)) // already logged in from other client
   {
     return false;
   }
@@ -97,7 +97,7 @@ bool confirm_booking(int client_id, char* booked, int *socket) {
   return true;
 }
 
-bool cancel_booking(int client_id, int seat, int *booked, int *socket) {
+bool cancel_booking(int client_id, int seat, int *socket) {
   if (!is_logged_in(client_id, socket) || seat < 0 || seat >= NUM_SEAT || seats[seat] == 0)
     return false;
   
@@ -105,11 +105,6 @@ bool cancel_booking(int client_id, int seat, int *booked, int *socket) {
   if (seats[seat] == client_id) {
     seats[seat] = 0;
     pthread_mutex_unlock(&lock[seat]);
-    for(int i = 0; i < NUM_SEAT; i++) {
-      pthread_mutex_lock(&lock[i]);
-      booked[i] = seats[i] == client_id ? 1 : 0;
-      pthread_mutex_unlock(&lock[i]);
-    }
     return true;
   }
   pthread_mutex_unlock(&lock[seat]);
@@ -163,7 +158,7 @@ void handle_query(int client_socket, query* q) {
     }
     break;
   case 4: // cancel booking
-    if(cancel_booking(q->user, q->data, seats, &client_socket))
+    if(cancel_booking(q->user, q->data, &client_socket))
     {
       snprintf(response, sizeof(response), "%d", q->data);
       success = true;
