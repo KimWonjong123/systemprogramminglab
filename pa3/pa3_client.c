@@ -5,6 +5,9 @@
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
 #endif
+#ifndef __USE_MISC
+#define __USE_MISC
+#endif
 #include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
@@ -12,6 +15,17 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+#ifdef __GNUC__
+#define UNUSED(x) UNUSED_##x __attribute__((unused))
+#else
+#define UNUSED(x) UNUSED_##x
+#endif
+
+int socket_fd = -1;
 
 // Write necessary types here
 
@@ -20,6 +34,54 @@ typedef struct query {
   int action;
   int seat;
 } query;
+
+void disconnect()
+{
+  if (socket_fd >= 0)
+  {
+    query q = {0, 0, 0};
+    write(socket_fd, &q, sizeof(q));
+    char response[4096];
+    memset(response, 0, sizeof(response));
+    read(socket_fd, response, sizeof(response));
+    int code = (int)strtol(response, NULL, 10);
+    if (code == 256)
+    {
+      printf("Connection terminated.\n");
+    }
+    else {
+      printf("Failed to disconnect.\n");
+    }
+  }
+  close(socket_fd);
+}
+
+void sigint_handler(int UNUSED(sig)) {
+  exit(0);
+}
+
+bool validate_query(int user, int action, int seat)
+{
+  if (user < 0 || user > 1023)
+    return false;
+  if (action < 0 || action > 5)
+    return false;
+  switch(action)
+  {
+    case 1:
+      if (seat < 0 || seat > INT32_MAX)
+        return false;
+      break;
+    case 2:
+    case 3:
+      if (seat < 0 || seat >= 256)
+        return false;
+      break;
+    default:
+      break;
+  }
+  return true;
+}
 
 // Write necessary/helper functions here
 
@@ -70,8 +132,12 @@ int main(int argc, char* argv[]) {
     exit(2);
   }
 
+  atexit(disconnect);
+  signal(SIGINT, sigint_handler);
+
   int client_socket =
       socket(PF_INET, SOCK_STREAM, getprotobyname("tcp")->p_proto);
+  socket_fd = client_socket;
 
   if (connect(client_socket, (struct sockaddr*)&server_addr,
               sizeof(server_addr)) == -1) {
@@ -130,10 +196,65 @@ int main(int argc, char* argv[]) {
   // Implement the interaction with the server in this loop
   while ((n_read = getline(&line, &capacity, stdin)) != -1) {
     line[n_read - 1] = '\0';
-    printf("%s\n", line);
+    int user, action, seat;
+    if (sscanf(line, "%d %d %d", &user, &action, &seat) != 3 || !validate_query(user, action, seat)) {
+      printf("Query is invalid.\n");
+      continue;
+    }
+
+    query q = {user, action, seat};
+    if (action == 0) // terminate
+    {
+      free(line);
+      exit(0);
+    }
+    write(client_socket, &q, sizeof(q));
+
+    char response[4096];
+    int code;
+    memset(response, 0, sizeof(response));
+    read(client_socket, response, sizeof(response));
+    code = (int)strtol(response, NULL, 10);
+    switch(action)
+    {
+      case 1: // login
+        if (code == -1)
+          puts("Failed to log in.");
+        else
+          puts("Logged in successfully.");
+        break;
+      case 2: // book
+        if (code == -1)
+          puts("Failed to book.");
+        else
+        {
+          printf("Seat %d booked.\n", code);
+        }
+        break;
+      case 3: // confirm booking 
+        if (code == -1)
+          puts("Failed to confirm booking.");
+        else
+          printf("Booked seats: \n%s\n", response);
+        break;
+      case 4: // cancel booking
+        if (code == -1)
+          puts("Failed to cancel booking.");
+        else
+          printf("Cancelled seat number: %d\n", code);
+        break;
+      case 5: // logout
+        if (code == -1)
+          puts("Failed to log out.");
+        else
+          puts("Logged out successfully.");
+        break;
+      default:
+        printf("Query is invalid.\n");
+        break;
+    }
   }
 
   free(line);
-  close(client_socket);
   return 0;
 }

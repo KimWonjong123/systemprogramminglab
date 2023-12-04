@@ -2,19 +2,28 @@
 #include <netdb.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
 #include <signal.h>
 
+#ifdef __GNUC__
+#define UNUSED(x) UNUSED_##x __attribute__((unused))
+#else
+#define UNUSED(x) UNUSED_##x
+#endif
+
 #define NUM_SEAT 256
 #define MAX_CLIENT 1024
 
 // index: client id, value: password, if value is 0, client is not registered
 int password[MAX_CLIENT];
+
 // index: client id, value: client socket, if value is 0, client is not connected
 int session[MAX_CLIENT];
+
 // index: seat numbver, value: client id, if value is 0, seat is not occupied
 int seats[NUM_SEAT];
 
@@ -26,14 +35,19 @@ typedef struct query {
 
 pthread_mutex_t lock[NUM_SEAT];
 
-void destroy_mutex() {
-  for (int i = 0; i < NUM_SEAT; i++) {
-    pthread_mutex_destroy(&lock[i]);
-  }
+bool is_logged_in(int client_id, int *socket)
+{
+  return session[client_id] != 0 && *socket == session[client_id];
 }
 
-bool login(int client_id, int pw, int* socket) {
-  if (password < 0) {
+bool login(int client_id, int pw, int *socket)
+{
+  if (pw < 0 ||
+      is_logged_in(client_id, socket) ||
+      client_id < 0 ||
+      client_id >= MAX_CLIENT ||
+      (session[client_id] != 0 && session[client_id] != *socket))
+  {
     return false;
   }
   if (password[client_id] == 0) // not registered
@@ -50,41 +64,55 @@ bool login(int client_id, int pw, int* socket) {
   return false;
 }
 
-bool is_logged_in(int client_id, int *socket) {
-  return session[client_id] == *socket;
-}
-
-bool book(int client_id, int seat, int *socket) {
+bool book(int client_id, int seat, int *socket, int *seat_num) {
   if (!is_logged_in(client_id, socket) || seat < 0 || seat >= NUM_SEAT)
     return false;
+  
+  pthread_mutex_lock(&lock[seat]);
   if (seats[seat] == 0) {
     seats[seat] = client_id;
+    *seat_num = seat;
+    pthread_mutex_unlock(&lock[seat]);
     return true;
   }
+  pthread_mutex_unlock(&lock[seat]);
   return false;
 }
 
-bool confirm_booking(int client_id, int* booked, int *socket) { // ???
+bool confirm_booking(int client_id, char* booked, int *socket) {
   if (!is_logged_in(client_id, socket))
     return false;
+  int booked_count = 0;
   for (int i = 0; i < NUM_SEAT; i++) {
+    pthread_mutex_lock(&lock[i]);
     if (seats[i] == client_id) {
-      booked[i] = 1;
+      snprintf(booked + strlen(booked), 5, "%d,", i);
+      booked_count++;
     }
+    pthread_mutex_unlock(&lock[i]);
   }
+  if (booked_count == 0)
+    return false;
+  booked[strlen(booked) - 1] = '\0'; // remove last comma
   return true;
 }
 
 bool cancel_booking(int client_id, int seat, int *booked, int *socket) {
   if (!is_logged_in(client_id, socket) || seat < 0 || seat >= NUM_SEAT || seats[seat] == 0)
     return false;
+  
+  pthread_mutex_lock(&lock[seat]);
   if (seats[seat] == client_id) {
     seats[seat] = 0;
+    pthread_mutex_unlock(&lock[seat]);
     for(int i = 0; i < NUM_SEAT; i++) {
+      pthread_mutex_lock(&lock[i]);
       booked[i] = seats[i] == client_id ? 1 : 0;
+      pthread_mutex_unlock(&lock[i]);
     }
     return true;
   }
+  pthread_mutex_unlock(&lock[seat]);
   return false;
 }
 
@@ -95,47 +123,94 @@ bool logout(int client_id, int *socket) {
   return true;
 }
 
-void sigint_handler(int signo) {
-  destroy_mutex();
-  exit(0);
-}
-
 void handle_query(int client_socket, query* q) {
-  char buf[1024];
-  switch (q->action) {
-    case 0: // terminate connection
-      break;
-    case 1: // login
-      break;
-    case 2: // book
-      break;
-    case 3: // confirm booking
-      break;
-    case 4: // cancel booking
-      break;
-    case 5: // logout
-      break;
-    default:
-      break;
+  char response[4096] = {0};
+  bool success = false;
+  switch (q->action)
+  {
+  case 0: // terminate connection
+    if (q->data == 0 && q->user == 0)
+    {
+      snprintf(response, sizeof(response), "%d", 256);
+      success = true;
+    }
+    break;
+  case 1: // login
+    if(login(q->user, q->data, &client_socket))
+    {
+      response[0] = '1';
+      success = true;
+    }
+    break;
+  case 2: // book
+    int seat_num;
+    if (book(q->user, q->data, &client_socket, &seat_num))
+    {
+      snprintf(response, sizeof(response), "%d", seat_num);
+      success = true;
+    }
+    break;
+  case 3: // confirm booking
+    char buf[4096];
+    memset(buf, 0, sizeof(buf));
+    char booked[NUM_SEAT + 1];
+    memset(booked, '0', NUM_SEAT);
+    booked[NUM_SEAT] = '\0';
+    if (confirm_booking(q->user, buf, &client_socket))
+    {
+      snprintf(response, sizeof(response), "%s", buf);
+      success = true;
+    }
+    break;
+  case 4: // cancel booking
+    if(cancel_booking(q->user, q->data, seats, &client_socket))
+    {
+      snprintf(response, sizeof(response), "%d", q->data);
+      success = true;
+    }
+    break;
+  case 5: // logout
+    if(logout(q->user, &client_socket))
+    {
+      response[0] = '1';
+      success = true;
+    }
+    break;
+  default:
+    break;
   }
-  write(client_socket, buf, strlen(buf) + 1);
+  if (!success)
+    snprintf(response, sizeof(response), "%d", -1);
+  write(client_socket, response, strlen(response));
+  if (q->action == 0 && success)
+  {
+    printf("Client %d disconnected\n", client_socket);
+    close(client_socket);
+    pthread_exit(NULL);
+  }
 }
 
 void client_handler(void* arg) {
   int client_socket = *(int*)arg;
   query q;
   while (true) {
-    read(client_socket, &q, sizeof(q));
-    if (q.action == 3) {
+    if (read(client_socket, &q, sizeof(q)) == 0)
+    {
       close(client_socket);
       break;
     }
     handle_query(client_socket, &q);
+    if (q.action == 0)
+    {
+      printf("Client %d disconnected\n", client_socket);
+      close(client_socket);
+      break;
+    }
   }
   pthread_exit(NULL);
 }
 
-int main(int argc, char* argv[]) {
+int main(int UNUSED(argc), char* argv[]) {
   int server_socket =
       socket(PF_INET, SOCK_STREAM, getprotobyname("tcp")->p_proto);
   struct sockaddr_in server_addr;
@@ -159,10 +234,9 @@ int main(int argc, char* argv[]) {
    *
    */
   for (int i = 0; i < NUM_SEAT; i++) {
-    seats[i] = false;
-    pthread_mutex_init(&lock[i], NULL);
+    pthread_mutex_t l = PTHREAD_MUTEX_INITIALIZER;
+    lock[i] = l;
   }
-  signal(SIGINT, sigint_handler);
 
   while (true) {
     int client_socket = accept(server_socket, NULL, NULL);
@@ -170,11 +244,11 @@ int main(int argc, char* argv[]) {
       printf("accept error\n");
       return 3;
     }
+    printf("Client %d connected\n", client_socket);
 
     pthread_t thread;
     pthread_create(&thread, NULL, (void*)client_handler, (void*)&client_socket);
   }
 
-  destroy_mutex();
   return 0;
 }
