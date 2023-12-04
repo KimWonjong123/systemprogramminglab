@@ -184,7 +184,6 @@ void handle_query(int client_socket, query* q) {
   write(client_socket, response, strlen(response));
   if (q->action == 0 && success)
   {
-    printf("Client %d disconnected\n", client_socket);
     close(client_socket);
     pthread_exit(NULL);
   }
@@ -202,7 +201,6 @@ void client_handler(void* arg) {
     handle_query(client_socket, &q);
     if (q.action == 0)
     {
-      printf("Client %d disconnected\n", client_socket);
       close(client_socket);
       break;
     }
@@ -244,7 +242,6 @@ int main(int UNUSED(argc), char* argv[]) {
       printf("accept error\n");
       return 3;
     }
-    printf("Client %d connected\n", client_socket);
 
     pthread_t thread;
     pthread_create(&thread, NULL, (void*)client_handler, (void*)&client_socket);
