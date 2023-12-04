@@ -1,8 +1,8 @@
 CC = gcc
 TARGET_SERVER := pa3_server
 TARGET_CLIENT := pa3_client
-CCFLAGS = -Wall -Wextra -g -fsanitize=address -lpthread
-LDFLAGS = -fsanitize=address -lpthread
+CCFLAGS = -Wall -Wextra -lpthread
+LDFLAGS = -lpthread
 
 all: $(TARGET_SERVER) $(TARGET_CLIENT)
 
